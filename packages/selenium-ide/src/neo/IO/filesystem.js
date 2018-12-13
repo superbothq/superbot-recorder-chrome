@@ -76,6 +76,41 @@ export function saveProject(_project) {
   UiState.saved()
 }
 
+export const uploadTest = (_project, _test, user) => {
+  const project = _project.toJS()
+  console.log("project", project)
+  const test = project.tests.find(t => t.id === _test.id)
+  console.log("test", test)
+
+  const tempTest = {
+    name: test.name,
+    description: 'desc',
+    organization: user.username,
+    file: {
+      content: new Blob([test], { type: 'text/plain' }),
+      filename: `${test.name}.side`,
+      mime_type: 'text/plain'
+    }
+  }
+  console.log("test", tempTest)
+
+  let formData = new FormData()
+  for (let key in tempTest){
+    formData.append(key, tempTest[key])
+  }
+  console.log("formData", formData)
+  console.log("user", user)
+  console.log("authorization", `Token token="${user.token}", email="${user.email}"`)
+  fetch('https://superbot.cloud/api/v1/tests', {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data',
+      'Authorization': `Token token="${user.token}", email="${user.email}"`
+    }
+  }).then(res => console.log(res.text()))
+}
+
 function downloadProject(project) {
   return exportProject(project).then(snapshot => {
     if (snapshot) {
