@@ -49,6 +49,9 @@ import Logger from '../../stores/view/Logs'
 
 import { loadProject, saveProject, loadJSProject } from '../../IO/filesystem'
 
+import LoginPage from '../../components/LoginPage'
+const cloud_creds = require('/home/samuli/.superbot/cloud_credentials')
+
 if (!isTest) {
   const api = require('../../../api')
   browser.runtime.onMessage.addListener(api.default)
@@ -108,7 +111,7 @@ if (browser.windows) {
 export default class Panel extends React.Component {
   constructor(props) {
     super(props)
-    this.state = { project }
+    this.state = { project, user: {} }
     this.keyDownHandler = window.document.body.onkeydown = this.handleKeyDown.bind(
       this
     )
@@ -269,6 +272,41 @@ export default class Panel extends React.Component {
     Logger.clearLogs()
     newProject.setModified(false)
   }
+  fetchTests = () => {
+    fetch('http://superbot.cloud/api/v1/tests', {
+      method: 'GET',
+      headers: { 'Authorization': `Token token="${this.state.user.token}", email="${this.state.user.email}"`
+      }
+    })
+    .then(res => res.text())
+    .then(body => console.log(body))
+  }
+  submitLogin = (user) => {
+    console.log('user:', user)
+    const formBody = Object.keys(user).map(key => encodeURIComponent(key) + '=' + encodeURIComponent(user[key])).join('&');
+    console.log(formBody)
+    fetch('http://superbot.cloud/api/v1/sessions', {
+      method: 'POST',
+      body: formBody,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }
+    })
+    .then(res => {
+      if(res.status === 201){
+        return res.json()
+      } else {
+        console.log("Error - response statuscode:", res.status)
+        return
+      }
+    })
+    .then(creds => this.setState({ user: creds }))
+  }
+  componentDidMount() {
+    console.log('creds:', cloud_creds['superbot.cloud'].token)
+    const creds = cloud_creds['superbot.cloud']
+    if(creds !== undefined){
+      this.setState({ user: creds })
+    }
+  }
   componentWillUnmount() {
     if (isProduction) {
       clearInterval(this.moveInterval)
@@ -277,11 +315,17 @@ export default class Panel extends React.Component {
     }
   }
   render() {
+    if(Object.keys(this.state.user).length === 0){
+      return (
+        <LoginPage submitLogin={this.submitLogin} />
+      )
+    }
     return (
       <div className="container">
         <SuiteDropzone
           loadProject={loadProject.bind(undefined, this.state.project)}
         >
+        {/*
           <SplitPane
             split="horizontal"
             minSize={UiState.minContentHeight}
@@ -292,6 +336,7 @@ export default class Panel extends React.Component {
               position: 'initial',
             }}
           >
+        */}
             <div className="wrapper">
               <PauseBanner />
               <ProjectHeader
@@ -324,21 +369,27 @@ export default class Panel extends React.Component {
                     suites={this.state.project.suites}
                     duplicateTest={this.state.project.duplicateTestCase}
                   />
+                  {/**/}
                   <Editor
                     url={this.state.project.url}
                     urls={this.state.project.urls}
                     setUrl={this.state.project.setUrl}
                     test={UiState.displayedTest}
                     callstackIndex={UiState.selectedTest.stack}
+                    user={this.state.user} //delete?
+                    project={this.state.project} //delete?
                   />
                 </SplitPane>
               </div>
             </div>
+          {/*
             <Console
               height={UiState.consoleHeight}
               restoreSize={UiState.restoreConsoleSize}
             />
+
           </SplitPane>
+          */}
           <Modal
             project={this.state.project}
             createNewProject={this.createNewProject.bind(this)}

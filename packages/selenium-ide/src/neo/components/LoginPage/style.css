@@ -1,0 +1,29 @@
+.supahbot-login-form{
+  width: 480px;
+  margin: auto;
+  margin-top: 50px;
+  text-align: center;
+  font-size: 26px;
+}
+
+#login-form-button {
+  margin-top: 10px;
+  font-size: 20px;
+  background-color: inherit;
+  border-radius: 8px;
+  border-style: none;
+  padding: 5px;
+  padding-left: 14px;
+  padding-right: 14px;
+  border-width: 1px;
+  background-color: steelblue;
+  color: #ffffff;
+}
+
+#login-form-button:hover {
+  transform: scale(1.1);
+}
+
+#login-form-button:active {
+  transform: scale(1.0);
+}

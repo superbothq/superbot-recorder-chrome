@@ -26,6 +26,8 @@ import TestTable from '../../components/TestTable'
 import CommandForm from '../../components/CommandForm'
 import './style.css'
 
+import { uploadTest } from '../../IO/filesystem';
+
 @observer
 export default class Editor extends React.Component {
   constructor(props) {
@@ -83,6 +85,7 @@ export default class Editor extends React.Component {
     return (
       <main className="editor" onKeyDown={this.handleKeyDown.bind(this)}>
         <ToolBar />
+        <button onClick={() => uploadTest(this.props.project, this.props.test, this.props.user)}>TEST ME</button>
         <UrlBar
           url={this.props.url}
           urls={this.props.urls}
