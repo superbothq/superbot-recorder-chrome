@@ -24,7 +24,6 @@ import ImportDialog from '../../components/ImportDialog'
 import SuiteSettings from '../../components/SuiteSettings'
 import RenameDialog from '../../components/Dialogs/Rename'
 import BaseUrlDialog from '../../components/Dialogs/BaseUrl'
-import WelcomeDialog from '../../components/Dialogs/Welcome'
 import AlertDialog from '../../components/Dialogs/Alert'
 import ModalState from '../../stores/view/ModalState'
 import { isProduction } from '../../../common/utils'
@@ -90,15 +89,6 @@ export default class Modal extends Component {
           onUrlSelection={ModalState.baseUrlState.done}
           cancel={ModalState.baseUrlState.cancel}
         />
-        {isProduction ? (
-          <WelcomeDialog
-            isWelcomed={ModalState.welcomeState.started}
-            project={this.props.project}
-            createNewProject={this.props.createNewProject}
-            hideWelcome={ModalState.hideWelcome}
-            completeWelcome={ModalState.completeWelcome}
-          />
-        ) : null}
       </div>
     )
   }

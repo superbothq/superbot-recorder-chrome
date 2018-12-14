@@ -23,19 +23,26 @@ export default class TestCase {
   id = null
   @observable
   name = null
+  description = null
   @observable
   commands = []
   nameDialogShown = false
 
-  constructor(id = uuidv4(), name = 'Untitled Test') {
+  constructor(id = uuidv4(), name = 'Untitled Test', description = '') {
     this.id = id
     this.name = name
+    this.description = description
     this.export = this.export.bind(this)
   }
 
   @action.bound
   setName(name) {
     this.name = name
+  }
+
+  @action.bound
+  setDescription(description) {
+    this.description = description
   }
 
   @action.bound

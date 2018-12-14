@@ -20,18 +20,16 @@ import { PropTypes } from 'prop-types'
 import { observer, Provider } from 'mobx-react'
 import { PropTypes as MobxPropTypes } from 'mobx-react'
 import { modifier } from 'modifier-keys'
-import UiState from '../../stores/view/UiState'
-import ModalState from '../../stores/view/ModalState'
-import PlaybackState from '../../stores/view/PlaybackState'
-import VerticalTabBar from '../../components/VerticalTabBar'
-import SearchBar from '../../components/SearchBar'
-import TestList from '../../components/TestList'
-import SuiteList from '../../components/SuiteList'
-import ExecutionPlan from '../../components/ExecutionPlan'
-import Runs from '../../components/Runs'
-import AddButton from '../../components/ActionButtons/Add'
+import UiState from  '../../../stores/view/Superbot/UiState'
+import ModalState from '../../../stores/view/ModalState'
+import PlaybackState from '../../../stores/view/PlaybackState'
+import SuperbotVerticalTabBar from '../../../components/Superbot/VerticalTabBar'
+import SearchBar from '../../../components/SearchBar'
+import SuperbotTestList from '../../../components/Superbot/TestList'
+import ExecutionPlan from '../../../components/ExecutionPlan'
+import Runs from '../../../components/Runs'
+import AddButton from '../../../components/ActionButtons/Add'
 import './style.css'
-import SuperbotTestList from '../../components/Superbot-TestList';
 
 @observer
 export default class Navigation extends React.Component {
@@ -65,6 +63,9 @@ export default class Navigation extends React.Component {
       UiState.changeView(tab)
     }
   }
+  componentDidMount() {
+    UiState.changeView('Tests')
+  }
   handleKeyDown(event) {
     const e = event.nativeEvent
     modifier(e)
@@ -81,6 +82,7 @@ export default class Navigation extends React.Component {
     }
   }
   render() {
+    console.log("uistate", UiState.selectedView)
     return (
       <aside
         className="test-cases"
@@ -88,10 +90,11 @@ export default class Navigation extends React.Component {
         onMouseEnter={() => UiState.setNavigationHover(true)}
         onMouseLeave={() => UiState.setNavigationHover(false)}
       >
-        <VerticalTabBar
+        <SuperbotVerticalTabBar
           tabs={UiState.views}
-          tab={UiState.selectedView}
+          tab='Tests'
           tabChanged={this.handleChangedTab}
+          defaultTab='Tests'
         >
           {UiState.selectedView === 'Tests' && (
             <AddButton
@@ -99,13 +102,7 @@ export default class Navigation extends React.Component {
               onClick={ModalState.createTest}
             />
           )}
-          {UiState.selectedView === 'Test suites' && (
-            <AddButton
-              data-tip={'<p>Add new test suite</p>'}
-              onClick={ModalState.createSuite}
-            />
-          )}
-        </VerticalTabBar>
+        </SuperbotVerticalTabBar>
         <Provider renameTest={ModalState.renameTest}>
           <React.Fragment>
             {UiState.selectedView === 'Tests' && (
@@ -118,28 +115,6 @@ export default class Navigation extends React.Component {
                   tests={this.props.tests}
                   duplicateTest={this.props.duplicateTest}
                   removeTest={ModalState.deleteTest}
-                />
-               {/*
-                <TestList
-                  tests={this.props.tests}
-                  duplicateTest={this.props.duplicateTest}
-                  removeTest={ModalState.deleteTest}
-                />
-                */}
-              </React.Fragment>
-            )}
-            {UiState.selectedView === 'Test suites' && (
-              <React.Fragment>
-                <SearchBar
-                  value={UiState.filterTerm}
-                  filter={UiState.changeFilter}
-                />
-                <SuiteList
-                  suites={this.props.suites}
-                  rename={ModalState.renameSuite}
-                  editSettings={ModalState.editSuiteSettings}
-                  selectTests={ModalState.editSuite}
-                  removeSuite={ModalState.deleteSuite}
                 />
               </React.Fragment>
             )}

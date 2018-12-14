@@ -31,12 +31,11 @@ import seed from '../../stores/seed'
 import SuiteDropzone from '../../components/SuiteDropzone'
 import PauseBanner from '../../components/PauseBanner'
 import ProjectHeader from '../../components/ProjectHeader'
-import Navigation from '../Navigation'
+import SuperbotNavigation from '../Superbot/Navigation'
 import Editor from '../Editor'
-import Console from '../Console'
 import Modal from '../Modal'
 import Changelog from '../../components/Changelog'
-import UiState from '../../stores/view/UiState'
+import UiState from '../../stores/view/Superbot/UiState'
 import PlaybackState from '../../stores/view/PlaybackState'
 import ModalState from '../../stores/view/ModalState'
 import '../../side-effects/contextMenu'
@@ -50,7 +49,7 @@ import Logger from '../../stores/view/Logs'
 import { loadProject, saveProject, loadJSProject } from '../../IO/filesystem'
 
 import LoginPage from '../../components/LoginPage'
-const cloud_creds = require('/home/samuli/.superbot/cloud_credentials')
+
 
 if (!isTest) {
   const api = require('../../../api')
@@ -273,38 +272,64 @@ export default class Panel extends React.Component {
     newProject.setModified(false)
   }
   fetchTests = () => {
-    fetch('http://superbot.cloud/api/v1/tests', {
-      method: 'GET',
-      headers: { 'Authorization': `Token token="${this.state.user.token}", email="${this.state.user.email}"`
-      }
-    })
-    .then(res => res.text())
-    .then(body => console.log(body))
+    fetch('https://superbot.cloud/api/v1/tests',{
+        method: 'GET',
+        headers: {
+          'Authorization': `Token token="${this.state.user.token}", email="${this.state.user.email}"`
+        }
+      })
+      .then(res => {
+        if(res.status === 200){
+          return res.json()
+        } else {
+          return Promise.reject('Error! Failed to fetch tests!')
+        }
+      })
+      .then(body => this.setState({ tests: body.tests }))
+      .catch(err => console.log(err))
   }
   submitLogin = (user) => {
     console.log('user:', user)
-    const formBody = Object.keys(user).map(key => encodeURIComponent(key) + '=' + encodeURIComponent(user[key])).join('&');
-    console.log(formBody)
+    const loginBody = Object.keys(user).map(key => encodeURIComponent(key) + '=' + encodeURIComponent(user[key])).join('&');
+    console.log(loginBody)
     fetch('http://superbot.cloud/api/v1/sessions', {
       method: 'POST',
-      body: formBody,
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }
+      body: loginBody,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+      }
     })
     .then(res => {
       if(res.status === 201){
         return res.json()
       } else {
-        console.log("Error - response statuscode:", res.status)
-        return
+        return Promise.reject('Error! Failed to login!')
       }
     })
-    .then(creds => this.setState({ user: creds }))
+    .then(creds => {
+      window.localStorage.setItem('cloud_creds', JSON.stringify(creds))
+      this.setState({ user: creds })
+      if(this.state.tests === undefined || this.state.tests.length === 0){
+        this.fetchTests()
+      }
+    })
+    .catch(err => console.log(err))
   }
   componentDidMount() {
-    console.log('creds:', cloud_creds['superbot.cloud'].token)
-    const creds = cloud_creds['superbot.cloud']
-    if(creds !== undefined){
-      this.setState({ user: creds })
+    let creds
+    try {
+    creds = JSON.parse(window.localStorage.getItem('cloud_creds'))
+    console.log('creds:', creds)
+    } catch(e) {
+      console.log(e)
+    }
+    if(creds !== null){
+      this.setState({ user: creds }, () => {
+        if(this.state.tests === undefined || this.state.tests.length === 0){
+          this.fetchTests()
+        }
+      })
+
     }
   }
   componentWillUnmount() {
@@ -320,23 +345,19 @@ export default class Panel extends React.Component {
         <LoginPage submitLogin={this.submitLogin} />
       )
     }
+    if(this.state.tests === undefined){
+      return (
+        <div>
+          Loading...
+        </div>
+      )
+    }
+    console.log("tests", this.state.tests)
     return (
       <div className="container">
         <SuiteDropzone
           loadProject={loadProject.bind(undefined, this.state.project)}
         >
-        {/*
-          <SplitPane
-            split="horizontal"
-            minSize={UiState.minContentHeight}
-            maxSize={UiState.maxContentHeight}
-            size={UiState.windowHeight - UiState.consoleHeight}
-            onChange={size => UiState.resizeConsole(window.innerHeight - size)}
-            style={{
-              position: 'initial',
-            }}
-          >
-        */}
             <div className="wrapper">
               <PauseBanner />
               <ProjectHeader
@@ -364,32 +385,24 @@ export default class Panel extends React.Component {
                   onDragStarted={this.navigationDragStart}
                   onDragFinished={this.navigationDragEnd}
                 >
-                  <Navigation
-                    tests={UiState.filteredTests}
+                  <SuperbotNavigation
+                    tests={this.state.tests}
                     suites={this.state.project.suites}
                     duplicateTest={this.state.project.duplicateTestCase}
                   />
-                  {/**/}
-                  <Editor
-                    url={this.state.project.url}
-                    urls={this.state.project.urls}
-                    setUrl={this.state.project.setUrl}
-                    test={UiState.displayedTest}
-                    callstackIndex={UiState.selectedTest.stack}
-                    user={this.state.user} //delete?
-                    project={this.state.project} //delete?
-                  />
+                  <textarea
+                    autoComplete='off'
+                    autoCorrect='off'
+                    autoCapitalize='off'
+                    spellCheck='false'
+                    cols='120'
+                    style={{ fontFamily: 'monospace' }}
+                  >
+                    {this.state.tests.length === 0 ? null : this.state.tests[0].files[0].content}
+                  </textarea>
                 </SplitPane>
               </div>
             </div>
-          {/*
-            <Console
-              height={UiState.consoleHeight}
-              restoreSize={UiState.restoreConsoleSize}
-            />
-
-          </SplitPane>
-          */}
           <Modal
             project={this.state.project}
             createNewProject={this.createNewProject.bind(this)}

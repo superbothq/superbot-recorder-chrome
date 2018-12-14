@@ -84,7 +84,7 @@ export const uploadTest = (_project, _test, user) => {
 
   const tempTest = {
     name: test.name,
-    description: 'desc',
+    description: test.description,
     organization: user.username,
     file: {
       content: new Blob([test], { type: 'text/plain' }),

@@ -29,11 +29,6 @@ class ModalState {
   suiteSettingsState = {}
   @observable
   baseUrlState = {}
-  @observable
-  welcomeState = {
-    started: false,
-    completed: false,
-  }
 
   constructor() {
     this.renameTest = this.rename.bind(this, Types.test)
@@ -72,16 +67,21 @@ class ModalState {
 
       return name === value || this.nameIsUnique(name, names)
     }
+    console.log("type", type)
+    console.log("value", value)
+    console.log("opts", opts)
+    let desc = Types.test === type ? true : false
     return new Promise(res => {
       this.renameState = {
         original: value,
         value,
         type,
+        desc,
         verify: verifyName,
         isNewTest: opts.isNewTest,
-        done: name => {
+        done: (name, desc) => {
           if (verifyName(name)) {
-            res(name)
+            res(name, desc)
             if (type === Types.test) {
               this.renameRunCommands(this.renameState.original, name)
             }
@@ -90,7 +90,6 @@ class ModalState {
         },
         cancel: () => {
           this.cancelRenaming()
-          if (!this.welcomeState.completed) this.showWelcome()
         },
       }
     })
@@ -112,12 +111,22 @@ class ModalState {
       if (name) this._project.createSuite(name)
     })
   }
-
+/*
   @action.bound
   createTest() {
     this.renameTest(undefined).then(name => {
       if (name) {
         const test = this._project.createTestCase(name)
+        UiState.selectTest(test)
+      }
+    })
+  }
+*/
+  @action.bound
+  createTest() {
+    this.renameTest(undefined).then((name, description) => {
+      if(name){
+        const test = this._project.createTestCase(name, description)
         UiState.selectTest(test)
       }
     })
@@ -214,21 +223,6 @@ class ModalState {
         }
       })
     })
-  }
-
-  @action.bound
-  showWelcome() {
-    this.welcomeState = { started: false, completed: false }
-  }
-
-  @action.bound
-  hideWelcome() {
-    this.welcomeState = { started: true, completed: false }
-  }
-
-  @action.bound
-  completeWelcome() {
-    this.welcomeState = { started: true, completed: true }
   }
 
   @action.bound
