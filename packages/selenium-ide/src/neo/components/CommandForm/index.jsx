@@ -28,7 +28,7 @@ import NewWindowInput from '../NewWindowInput'
 import FlatButton from '../FlatButton'
 import { find, select } from '../../IO/SideeX/find-select'
 import ModalState from '../../stores/view/ModalState'
-import UiState from '../../stores/view/UiState'
+import UiState from '../../stores/view/Superbot/UiState'
 import PlaybackState from '../../stores/view/PlaybackState'
 import './style.css'
 @observer

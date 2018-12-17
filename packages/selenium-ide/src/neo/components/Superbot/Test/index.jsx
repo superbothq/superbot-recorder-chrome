@@ -167,8 +167,8 @@ export default class Test extends React.Component {
       this.props.setSectionFocus('navigation', undefined)
     }
   }
-  handleClick(test, suite) {
-    this.props.selectTest(test, suite)
+  handleClick(test) {
+    this.props.selectTest(test)
   }
   handleKeyDown(event) {
     const e = event.nativeEvent
@@ -256,8 +256,7 @@ export default class Test extends React.Component {
           )}
           onClick={this.handleClick.bind(
             this,
-            this.props.test,
-            this.props.suite
+            this.props.test
           )}
         >
           <span>{this.props.test.name}</span>

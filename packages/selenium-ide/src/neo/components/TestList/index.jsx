@@ -21,7 +21,7 @@ import { PropTypes as MobxPropTypes, inject } from 'mobx-react'
 import { observer } from 'mobx-react'
 import classNames from 'classnames'
 import Test, { DraggableTest, MenuTest } from '../Test'
-import UiState from '../../stores/view/UiState'
+import UiState from '../../stores/view/Superbot/UiState'
 import PlaybackState from '../../stores/view/PlaybackState'
 import './style.css'
 

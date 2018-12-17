@@ -17,7 +17,7 @@
 
 import uuidv4 from 'uuid/v4'
 import { action, reaction, computed, observable } from 'mobx'
-import UiState from './UiState'
+import UiState from '../view/Superbot/UiState'
 import ModalState from './ModalState'
 import Command from '../../models/Command'
 import variables from './Variables'

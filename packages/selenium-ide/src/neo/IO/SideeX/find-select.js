@@ -16,7 +16,7 @@
 // under the License.
 
 import browser from 'webextension-polyfill'
-import UiState from '../../stores/view/UiState'
+import UiState from '../../stores/view/Superbot/UiState'
 import PlaybackState from '../../stores/view/PlaybackState'
 import ModalState from '../../stores/view/ModalState'
 import WindowSession from '../../IO/window-session'

@@ -16,7 +16,7 @@
 // under the License.
 
 import Router from '../../router'
-import UiState from '../../neo/stores/view/UiState'
+import UiState from '../../neo/stores/view/Superbot/UiState'
 import { Commands } from '../../neo/models/Command'
 import { recordCommand } from '../../neo/IO/SideeX/record'
 import { select } from '../../neo/IO/SideeX/find-select'

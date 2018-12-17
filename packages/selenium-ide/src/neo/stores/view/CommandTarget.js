@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-import UiState from './UiState'
+import UiState from './Superbot/UiState'
 import PlaybackState from './PlaybackState'
 import Logger from './Logs'
 

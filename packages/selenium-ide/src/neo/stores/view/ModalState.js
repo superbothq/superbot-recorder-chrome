@@ -16,7 +16,7 @@
 // under the License.
 
 import { action, observable } from 'mobx'
-import UiState from './UiState'
+import UiState from './Superbot/UiState'
 
 class ModalState {
   @observable

@@ -28,7 +28,7 @@ import DisableBreakpoints from '../../components/ActionButtons/DisableBreakpoint
 import PauseExceptions from '../../components/ActionButtons/PauseExceptions'
 import Record from '../../components/ActionButtons/Record'
 import GaugeMenu from '../GaugeMenu'
-import UiState from '../../stores/view/UiState'
+import UiState from '../../stores/view/Superbot/UiState'
 import PlaybackState from '../../stores/view/PlaybackState'
 import ModalState from '../../stores/view/ModalState'
 import './style.css'

@@ -46,9 +46,10 @@ import '../../styles/resizer.css'
 import { isProduction, isTest, userAgent } from '../../../common/utils'
 import Logger from '../../stores/view/Logs'
 
-import { loadProject, saveProject, loadJSProject } from '../../IO/filesystem'
+import { loadProject, saveProject, loadJSProject, uploadTest } from '../../IO/filesystem'
 
 import LoginPage from '../../components/LoginPage'
+import SuperbotEditor from '../../components/Superbot/Editor';
 
 
 if (!isTest) {
@@ -288,6 +289,51 @@ export default class Panel extends React.Component {
       .then(body => this.setState({ tests: body.tests }))
       .catch(err => console.log(err))
   }
+                      //temp
+  uploadTest = async (test, content, user) => {
+    console.log("content", content)
+    let name
+    if(test === undefined){
+      name = await UiState.nameTest()
+      console.log("name log", name)
+    }
+    const tempTest = {
+      name: test ? test.name : name,
+      description: 'desc',
+      organization: user.username,
+    }
+    let formData = new FormData()
+    for (let key in tempTest){
+      formData.append(key, tempTest[key])
+    }
+    formData.append('file', new Blob([content], { type: 'text/html'}),`${tempTest.name}.side`)
+
+    console.log('formData', ...formData)
+    console.log("blob", new Blob([content], { type: 'text/html'}))
+    console.log('user', user)
+    fetch('https://superbot.cloud/api/v1/tests', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Authorization': `Token token="${user.token}", email="${user.email}"`,
+      }
+    })
+    .then(res => {
+      if(res.status === 200){
+        return res.json()
+      } else {
+        return Promise.reject('Error uploading test!')
+      }
+    })
+    .then(test => {
+      this.fetchTests()
+      const newTest = this.state.tests.filter(t => t.name === test.name)
+      console.log('newTest', newTest)
+      UiState.selectTest(newTest)
+    })
+    .catch(err => console.log(err))
+  }
+
   submitLogin = (user) => {
     console.log('user:', user)
     const loginBody = Object.keys(user).map(key => encodeURIComponent(key) + '=' + encodeURIComponent(user[key])).join('&');
@@ -316,21 +362,29 @@ export default class Panel extends React.Component {
     .catch(err => console.log(err))
   }
   componentDidMount() {
-    let creds
-    try {
-    creds = JSON.parse(window.localStorage.getItem('cloud_creds'))
-    console.log('creds:', creds)
-    } catch(e) {
-      console.log(e)
-    }
-    if(creds !== null){
-      this.setState({ user: creds }, () => {
-        if(this.state.tests === undefined || this.state.tests.length === 0){
-          this.fetchTests()
-        }
-      })
+    //if(false){
+      let creds
+      try {
+      creds = JSON.parse(window.localStorage.getItem('cloud_creds'))
+      console.log('creds:', creds)
+      } catch(e) {
+        console.log(e)
+      }
+      if(creds !== null){
+        this.setState({ user: creds }, () => {
+          if(this.state.tests === undefined || this.state.tests.length === 0){
+            this.fetchTests()
+          }
+        })
 
+      }
+      /*
+    } else {
+      this.setState({ user: { email: 'reijonen.samuli@gmail.com',token: '7b2bd8c544a75a97a5c6b643eb8e9489', username: 'SamuliR' }}, () => {
+        this.fetchTests()
+      })
     }
+    */
   }
   componentWillUnmount() {
     if (isProduction) {
@@ -390,16 +444,12 @@ export default class Panel extends React.Component {
                     suites={this.state.project.suites}
                     duplicateTest={this.state.project.duplicateTestCase}
                   />
-                  <textarea
-                    autoComplete='off'
-                    autoCorrect='off'
-                    autoCapitalize='off'
-                    spellCheck='false'
-                    cols='120'
-                    style={{ fontFamily: 'monospace' }}
-                  >
-                    {this.state.tests.length === 0 ? null : this.state.tests[0].files[0].content}
-                  </textarea>
+                  <SuperbotEditor
+                    //TODO: use selectedTest.id
+                    key={UiState.selectedTest.name}
+                    uploadTest={this.uploadTest}
+                    user={this.state.user}
+                  />
                 </SplitPane>
               </div>
             </div>

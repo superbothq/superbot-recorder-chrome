@@ -16,7 +16,7 @@
 // under the License.
 
 import browser from 'webextension-polyfill'
-import UiState from '../../stores/view/UiState'
+import UiState from '../../stores/view/Superbot/UiState'
 import record, { recordOpensWindow } from './record'
 import { Logger, Channels } from '../../stores/view/Logs'
 

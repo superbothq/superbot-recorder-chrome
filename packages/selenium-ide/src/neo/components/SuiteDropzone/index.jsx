@@ -24,6 +24,6 @@ export default class SuiteDropzone extends React.Component {
     connectDropTarget: PropTypes.func.isRequired,
   }
   render() {
-    return this.props.connectDropTarget(<div>{this.props.children}</div>)
+    return this.props.connectDropTarget(<div style={{ width: '100%' }}>{this.props.children}</div>)
   }
 }

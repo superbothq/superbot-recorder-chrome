@@ -207,6 +207,14 @@ class UiState {
   }
 
   @action.bound
+  selectTest(test) {
+    console.log('param test', test)
+    this.selectedTest = {...test}
+    console.log('UiState test', this.selectedTest)
+  }
+
+  /*
+  @action.bound
   _selectTest(test, suite, stack, override) {
     console.log("test", test)
     console.log("suite", suite)
@@ -259,6 +267,7 @@ class UiState {
       this._selectTest(test, suite, stack, override)
     }
   }
+*/
 
   @action.bound
   selectTestByIndex(index, suite) {
@@ -369,6 +378,12 @@ class UiState {
     }
   }
 
+  async nameTest() {
+    const name = await ModalState.renameTest('', { isNewTest: true })
+    return name
+  }
+
+  /*
   nameNewTest(isEnabled = true) {
     const test = this.selectedTest.test
     if (isEnabled && test.name === 'Untitled' && !test.nameDialogShown) {
@@ -378,6 +393,7 @@ class UiState {
       test.nameDialogShown = true
     }
   }
+  */
 
   @action.bound
   async stopRecording(opts = { nameNewTest: true }) {

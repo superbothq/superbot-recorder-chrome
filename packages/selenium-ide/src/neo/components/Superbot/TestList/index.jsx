@@ -41,7 +41,8 @@ export default class SuperbotTestList extends Component {
     return (
       <ul className={classNames('tests', { active: !this.props.collapsed })}>
         {this.props.tests.map((test, index) => (
-          <li key={test.id}>
+          //TODO: id's for tests
+          <li key={test.name}>
             {this.props.noMenu ? (
               <SuperbotTest
                 key={test.id}
@@ -61,7 +62,7 @@ export default class SuperbotTestList extends Component {
                 suite={this.props.suite}
                 selected={
                   UiState.selectedTest.test &&
-                  test.id === UiState.selectedTest.test.id
+                  test.name === UiState.selectedTest.test.name
                 }
                 isExecuting={
                   PlaybackState.isPlaying &&
@@ -91,11 +92,7 @@ export default class SuperbotTestList extends Component {
                 suite={this.props.suite}
                 selected={
                   UiState.selectedTest.test &&
-                  test.id === UiState.selectedTest.test.id &&
-                  this.props.suite.id ===
-                    (UiState.selectedTest.suite
-                      ? UiState.selectedTest.suite.id
-                      : undefined)
+                  test.name === UiState.selectedTest.test.name
                 }
                 isExecuting={
                   PlaybackState.isPlaying &&
@@ -133,7 +130,7 @@ export default class SuperbotTestList extends Component {
                 test={test}
                 selected={
                   UiState.selectedTest.test &&
-                  test.id === UiState.selectedTest.test.id
+                  test.name === UiState.selectedTest.test.name
                 }
                 isExecuting={
                   PlaybackState.isPlaying &&

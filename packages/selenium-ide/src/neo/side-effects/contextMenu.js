@@ -1,6 +1,6 @@
 import browser from 'webextension-polyfill'
 import { reaction } from 'mobx'
-import UiState from '../stores/view/UiState'
+import UiState from '../stores/view/Superbot/UiState'
 
 reaction(
   () => UiState.isRecording,

@@ -17,7 +17,7 @@
 
 import generate from 'project-name-generator'
 import { CommandsArray } from '../models/Command'
-import UiState from './view/UiState'
+import UiState from './view/Superbot/UiState'
 
 export default function seed(store, numberOfSuites = 0) {
   function generateSuite() {

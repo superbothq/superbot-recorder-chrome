@@ -23,7 +23,7 @@ import playbackRouter from './playback'
 import recordRouter from './record'
 import exportRouter from './export'
 import popupRouter from './popup'
-import UiState from '../../neo/stores/view/UiState'
+import UiState from '../../neo/stores/view/Superbot/UiState'
 
 const router = new Router()
 
