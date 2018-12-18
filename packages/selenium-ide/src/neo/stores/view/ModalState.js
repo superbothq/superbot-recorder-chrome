@@ -79,9 +79,9 @@ class ModalState {
         desc,
         verify: verifyName,
         isNewTest: opts.isNewTest,
-        done: (name, desc) => {
+        done: (name) => {
           if (verifyName(name)) {
-            res(name, desc)
+            res(name)
             if (type === Types.test) {
               this.renameRunCommands(this.renameState.original, name)
             }
@@ -111,22 +111,12 @@ class ModalState {
       if (name) this._project.createSuite(name)
     })
   }
-/*
+
   @action.bound
   createTest() {
     this.renameTest(undefined).then(name => {
       if (name) {
         const test = this._project.createTestCase(name)
-        UiState.selectTest(test)
-      }
-    })
-  }
-*/
-  @action.bound
-  createTest() {
-    this.renameTest(undefined).then((name, description) => {
-      if(name){
-        const test = this._project.createTestCase(name, description)
         UiState.selectTest(test)
       }
     })

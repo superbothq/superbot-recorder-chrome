@@ -72,8 +72,9 @@ export default class SuperbotEditor extends React.Component {
     return (
       <div style={{ width: '100%' }}>
         <button
-          style={{ display: 'block' }}
-          onClick={() => this.props.uploadTest(this.props.selectedTest, this.state.content, this.props.user)}>Upload test!</button>
+          style={{ display: 'inline-block' }}
+          onClick={() => this.props.uploadTest(UiState.selectedTest, this.state.content, this.props.user)}>Upload test!</button>
+        <p style={{ display: 'inline-block'}}>Selected test: {UiState.selectedTest ? UiState.selectedTest.name : ''}</p>
         <textarea
           autoComplete='off'
           autoCorrect='off'
@@ -81,9 +82,11 @@ export default class SuperbotEditor extends React.Component {
           spellCheck='false'
           style={{ 
             fontFamily: 'monospace',
-            height: '100%',
             width: '100%',
-            maxWidth: '607px'
+            height: '94.7%',
+            padding: 0,
+            position: 'relative',
+            right: '2px'
           }}
           name='content'
           onChange={(event) => this.setState({ [event.target.name]: event.target.value })}

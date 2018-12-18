@@ -1,7 +1,6 @@
 .container {
   display: flex;
   height: stretch;
-  width: 800px;
 }
 
 .container .wrapper,

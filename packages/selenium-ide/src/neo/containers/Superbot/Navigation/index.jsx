@@ -99,7 +99,8 @@ export default class Navigation extends React.Component {
           {UiState.selectedView === 'Tests' && (
             <AddButton
               data-tip={'<p>Add new test</p>'}
-              onClick={ModalState.createTest}
+              onClick={this.props.createTest}
+              //onClick={ModalState.createTest}
             />
           )}
         </SuperbotVerticalTabBar>

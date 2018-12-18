@@ -378,6 +378,17 @@ class UiState {
     }
   }
 
+  createTest = async () => {
+    const newName = await this.nameTest()
+    const test = {
+      name: newName,
+      description: '',
+      organization: null
+    }
+    this.selectTest(test)
+    return test
+  }
+
   async nameTest() {
     const name = await ModalState.renameTest('', { isNewTest: true })
     return name

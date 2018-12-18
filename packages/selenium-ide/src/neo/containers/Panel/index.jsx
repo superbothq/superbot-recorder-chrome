@@ -289,9 +289,10 @@ export default class Panel extends React.Component {
       .then(body => this.setState({ tests: body.tests }))
       .catch(err => console.log(err))
   }
-                      //temp
+                            //temp
   uploadTest = async (test, content, user) => {
     console.log("content", content)
+    console.log('uploadTest', test)
     let name
     if(test === undefined){
       name = await UiState.nameTest()
@@ -360,6 +361,10 @@ export default class Panel extends React.Component {
       }
     })
     .catch(err => console.log(err))
+  }
+  createTest = async () => {
+    const test = await UiState.createTest()
+    this.setState({ tests: [...this.state.tests, test] })
   }
   componentDidMount() {
     //if(false){
@@ -443,6 +448,7 @@ export default class Panel extends React.Component {
                     tests={this.state.tests}
                     suites={this.state.project.suites}
                     duplicateTest={this.state.project.duplicateTestCase}
+                    createTest={this.createTest}
                   />
                   <SuperbotEditor
                     //TODO: use selectedTest.id
