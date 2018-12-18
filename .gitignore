@@ -2,6 +2,7 @@ web-ext-artifacts
 node_modules
 _MACOSX/
 .DS_Store
+TODO
 build
 packages/selenium-ide/selenium
 .peru

@@ -1,7 +1,7 @@
 {
   "description": "Superbot Recorder and Playback tool for ease of getting acquainted with Selenium WebDriver.",
   "manifest_version": 2,
-  "name": "Superbot-Recorder-Chrome",
+  "name": "Superbot Recorder",
   "version": "1.0",
   "version_name": "1.0",
   "homepage_url": "https://github.com/superbothq/superbot-recorder-chrome",

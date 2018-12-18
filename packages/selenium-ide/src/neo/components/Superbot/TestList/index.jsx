@@ -45,7 +45,7 @@ export default class SuperbotTestList extends Component {
           <li key={test.name}>
             {this.props.noMenu ? (
               <SuperbotTest
-                key={test.id}
+                key={test.name}
                 className={PlaybackState.testState.get(test.id)}
                 callstack={
                   PlaybackState.stackCaller === test
@@ -61,8 +61,8 @@ export default class SuperbotTestList extends Component {
                 test={test}
                 suite={this.props.suite}
                 selected={
-                  UiState.selectedTest.test &&
-                  test.name === UiState.selectedTest.test.name
+                  UiState.selectedTest &&
+                  test.name === UiState.selectedTest.name
                 }
                 isExecuting={
                   PlaybackState.isPlaying &&
@@ -91,8 +91,8 @@ export default class SuperbotTestList extends Component {
                 test={test}
                 suite={this.props.suite}
                 selected={
-                  UiState.selectedTest.test &&
-                  test.name === UiState.selectedTest.test.name
+                  UiState.selectedTest &&
+                  test.name === UiState.selectedTest.name
                 }
                 isExecuting={
                   PlaybackState.isPlaying &&
@@ -106,13 +106,7 @@ export default class SuperbotTestList extends Component {
                 }
                 changed={UiState.getTestState(test).modified}
                 selectTest={UiState.selectTest}
-                removeTest={
-                  this.props.removeTest
-                    ? () => {
-                        this.props.removeTest(test)
-                      }
-                    : undefined
-                }
+                removeTest={this.props.removeTest}
                 swapTests={this.props.suite.swapTestCases}
                 moveSelectionUp={() => {
                   UiState.selectTestByIndex(index - 1, this.props.suite)
@@ -129,8 +123,8 @@ export default class SuperbotTestList extends Component {
                 index={index}
                 test={test}
                 selected={
-                  UiState.selectedTest.test &&
-                  test.name === UiState.selectedTest.test.name
+                  UiState.selectedTest &&
+                  test.name === UiState.selectedTest.name
                 }
                 isExecuting={
                   PlaybackState.isPlaying &&
@@ -148,13 +142,7 @@ export default class SuperbotTestList extends Component {
                 duplicateTest={() => {
                   this.props.duplicateTest(test)
                 }}
-                removeTest={
-                  this.props.removeTest
-                    ? () => {
-                        this.props.removeTest(test)
-                      }
-                    : undefined
-                }
+                removeTest={this.props.removeTest}
                 moveSelectionUp={() => {
                   UiState.selectTestByIndex(index - 1)
                 }}

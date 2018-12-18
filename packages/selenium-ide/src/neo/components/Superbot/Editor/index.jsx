@@ -73,8 +73,7 @@ export default class SuperbotEditor extends React.Component {
       <div style={{ width: '100%' }}>
         <button
           style={{ display: 'inline-block' }}
-          onClick={() => this.props.uploadTest(UiState.selectedTest, this.state.content, this.props.user)}>Upload test!</button>
-        <p style={{ display: 'inline-block'}}>Selected test: {UiState.selectedTest ? UiState.selectedTest.name : ''}</p>
+          onClick={() => this.props.uploadTest(UiState.selectedTest, this.state.content)}>Upload test!</button>
         <textarea
           autoComplete='off'
           autoCorrect='off'
@@ -83,7 +82,7 @@ export default class SuperbotEditor extends React.Component {
           style={{ 
             fontFamily: 'monospace',
             width: '100%',
-            height: '94.7%',
+            height: '96.8%',
             padding: 0,
             position: 'relative',
             right: '2px'
@@ -95,38 +94,5 @@ export default class SuperbotEditor extends React.Component {
         </textarea>
       </div>
     )
-    /*
-    return (
-      <main className="editor" onKeyDown={this.handleKeyDown.bind(this)}>
-        <ToolBar />
-        <button onClick={() => uploadTest(this.props.project, this.props.test, this.props.user)}>TEST ME</button>
-        <UrlBar
-          url={this.props.url}
-          urls={this.props.urls}
-          setUrl={this.props.setUrl}
-        />
-        <TestTable
-          commands={this.props.test ? this.props.test.commands : null}
-          callstackIndex={this.props.callstackIndex}
-          selectedCommand={
-            UiState.selectedCommand ? UiState.selectedCommand.id : null
-          }
-          selectCommand={UiState.selectCommand}
-          addCommand={this.addCommand}
-          removeCommand={this.removeCommand}
-          clearAllCommands={
-            this.props.test ? this.props.test.clearAllCommands : null
-          }
-          swapCommands={this.props.test ? this.props.test.swapCommands : null}
-        />
-        <CommandForm
-          command={UiState.selectedCommand}
-          setCommand={this.handleCommandChange}
-          isSelecting={UiState.isSelectingTarget}
-          onSubmit={UiState.selectNextCommand}
-        />
-      </main>
-    )
-    */
   }
 }
