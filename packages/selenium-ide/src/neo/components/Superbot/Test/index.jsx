@@ -311,7 +311,7 @@ export class MenuTest extends React.Component {
         <ListMenuItem onClick={this.props.duplicateTest}>
           Duplicate
         </ListMenuItem>
-        <ListMenuItem onClick={this.props.removeTest}>Delete</ListMenuItem>
+        <ListMenuItem onClick={() => this.props.removeTest(this.props.test)}>Delete</ListMenuItem>
       </ListMenu>
     )
     //setting component of context menu.

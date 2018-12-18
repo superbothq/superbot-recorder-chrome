@@ -115,7 +115,7 @@ export default class Navigation extends React.Component {
                 <SuperbotTestList
                   tests={this.props.tests}
                   duplicateTest={this.props.duplicateTest}
-                  removeTest={ModalState.deleteTest}
+                  removeTest={this.props.removeTest}
                 />
               </React.Fragment>
             )}

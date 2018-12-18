@@ -290,18 +290,19 @@ export default class Panel extends React.Component {
       .catch(err => console.log(err))
   }
                             //temp
-  uploadTest = async (test, content, user) => {
+  uploadTest = async (test, content) => {
     console.log("content", content)
     console.log('uploadTest', test)
     let name
-    if(test === undefined){
+    if(test.name === '' || test.name === undefined){
       name = await UiState.nameTest()
       console.log("name log", name)
     }
     const tempTest = {
       name: test ? test.name : name,
       description: 'desc',
-      organization: user.username,
+      organization: this.state.user.username,
+      file: []
     }
     let formData = new FormData()
     for (let key in tempTest){
@@ -311,61 +312,58 @@ export default class Panel extends React.Component {
 
     console.log('formData', ...formData)
     console.log("blob", new Blob([content], { type: 'text/html'}))
-    console.log('user', user)
+    console.log('user', this.state.user)
+
     fetch('https://superbot.cloud/api/v1/tests', {
       method: 'POST',
       body: formData,
       headers: {
-        'Authorization': `Token token="${user.token}", email="${user.email}"`,
+        'Authorization': `Token token="${this.state.user.token}", email="${this.state.user.email}"`,
       }
-    })
-    .then(res => {
+    }).then(res => {
       if(res.status === 200){
         return res.json()
       } else {
         return Promise.reject('Error uploading test!')
       }
-    })
-    .then(test => {
-      this.fetchTests()
-      const newTest = this.state.tests.filter(t => t.name === test.name)
-      console.log('newTest', newTest)
-      UiState.selectTest(newTest)
-    })
-    .catch(err => console.log(err))
+    }).then(test => {
+      //TODO: server acceps a test with field >file
+      //but sends back a test with field >files
+      console.log("test before", test)
+      delete Object.assign(test, {['files']: [test['file']] })['file'];
+      const otherTests = this.state.tests.filter(t => t.name !== test.name)
+      this.setState({ tests: [...otherTests, test] })
+      console.log({ otherTests })
+      console.log({ test })
+      UiState.selectTest(test)
+
+    }).catch(err => console.log(err))
   }
 
-  submitLogin = (user) => {
-    console.log('user:', user)
-    const loginBody = Object.keys(user).map(key => encodeURIComponent(key) + '=' + encodeURIComponent(user[key])).join('&');
-    console.log(loginBody)
-    fetch('http://superbot.cloud/api/v1/sessions', {
-      method: 'POST',
-      body: loginBody,
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-      }
-    })
-    .then(res => {
-      if(res.status === 201){
-        return res.json()
-      } else {
-        return Promise.reject('Error! Failed to login!')
-      }
-    })
-    .then(creds => {
-      window.localStorage.setItem('cloud_creds', JSON.stringify(creds))
-      this.setState({ user: creds })
-      if(this.state.tests === undefined || this.state.tests.length === 0){
-        this.fetchTests()
-      }
-    })
-    .catch(err => console.log(err))
-  }
   createTest = async () => {
     const test = await UiState.createTest()
     this.setState({ tests: [...this.state.tests, test] })
   }
+
+  removeTest = (test) => {
+    fetch(`https://superbot.cloud/api/v1/tests/${test.name}`,{
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Token token="${this.state.user.token}", email="${this.state.user.email}"`
+      }
+    }).then(res => {
+      if(res.status === 204){
+        const newTests = this.state.tests.filter(t => t.name !== test.name)
+        this.setState({ tests: newTests }, () => {
+          //a.k.a select empty test
+          UiState.selectTest({ name: '', description: '', organization: null})
+        })
+      } else {
+        console.log('Error deleting test!', res.status)
+      }
+    }).catch(e => console.log("Fetch: Error deleting test!", e))
+  }
+
   componentDidMount() {
     //if(false){
       let creds
@@ -383,7 +381,7 @@ export default class Panel extends React.Component {
         })
 
       }
-      /*
+    /*
     } else {
       this.setState({ user: { email: 'reijonen.samuli@gmail.com',token: '7b2bd8c544a75a97a5c6b643eb8e9489', username: 'SamuliR' }}, () => {
         this.fetchTests()
@@ -401,7 +399,7 @@ export default class Panel extends React.Component {
   render() {
     if(Object.keys(this.state.user).length === 0){
       return (
-        <LoginPage submitLogin={this.submitLogin} />
+        <LoginPage />
       )
     }
     if(this.state.tests === undefined){
@@ -449,12 +447,12 @@ export default class Panel extends React.Component {
                     suites={this.state.project.suites}
                     duplicateTest={this.state.project.duplicateTestCase}
                     createTest={this.createTest}
+                    removeTest={this.removeTest}
                   />
                   <SuperbotEditor
                     //TODO: use selectedTest.id
                     key={UiState.selectedTest.name}
                     uploadTest={this.uploadTest}
-                    user={this.state.user}
                   />
                 </SplitPane>
               </div>
