@@ -21,7 +21,7 @@ import { AppContainer } from 'react-hot-loader'
 import { useStrict } from 'mobx'
 import Panel from '../Panel'
 
-useStrict(true)
+useStrict(false)
 
 const render = Component => {
   ReactDOM.render(

@@ -104,7 +104,8 @@ export default class Navigation extends React.Component {
             />
           )}
         </SuperbotVerticalTabBar>
-        <Provider renameTest={ModalState.renameTest}>
+        {/*renameTest={ModalState.renameTest}*/}
+        <Provider renameTest={this.props.renameTest}>
           <React.Fragment>
             {UiState.selectedView === 'Tests' && (
               <React.Fragment>
@@ -117,6 +118,7 @@ export default class Navigation extends React.Component {
                   duplicateTest={this.props.duplicateTest}
                   removeTest={this.props.removeTest}
                   saveTestState={this.props.saveTestState}
+                  renameTest={this.props.renameTest}
                 />
               </React.Fragment>
             )}

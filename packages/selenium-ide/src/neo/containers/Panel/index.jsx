@@ -17,7 +17,7 @@
 
 import browser from 'webextension-polyfill'
 import React from 'react'
-import { observable } from 'mobx'
+import { observable, action } from 'mobx'
 import { observer } from 'mobx-react'
 import { DragDropContext } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
@@ -360,6 +360,15 @@ export default class Panel extends React.Component {
     this.setState({ tests: newTests })
   }
 
+  renameTest = async (test) => {
+    const newTests = this.state.tests.filter(t => t.name !== test.name)
+    const index =  this.state.tests.findIndex(t => t.name === test.name)
+    test.name = await UiState.nameTest()
+    UiState.selectedTest.name = test.name
+    newTests.splice(index, 0, test)
+    this.setState({ tests: newTests })
+  }
+
   saveTestState = () => {
     const newTests = this.sortByIndex(this.state.tests, undefined, UiState.selectedTest)
     this.setState({ tests: newTests })
@@ -469,6 +478,7 @@ export default class Panel extends React.Component {
                     createTest={this.createTest}
                     removeTest={this.removeTest}
                     saveTestState={this.saveTestState}
+                    renameTest={this.renameTest}
                   />
                   <SuperbotEditor
                     //TODO: use selectedTest.id

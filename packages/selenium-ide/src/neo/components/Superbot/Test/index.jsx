@@ -300,11 +300,7 @@ export class MenuTest extends React.Component {
     const listMenu = (
       <ListMenu width={130} padding={-5} opener={<MoreButton />}>
         <ListMenuItem
-          onClick={() =>
-            this.props.renameTest(this.props.test.name).then(name => {
-              this.props.test.setName(name)
-            })
-          }
+          onClick={() => this.props.renameTest(this.props.test)}
         >
           Rename
         </ListMenuItem>

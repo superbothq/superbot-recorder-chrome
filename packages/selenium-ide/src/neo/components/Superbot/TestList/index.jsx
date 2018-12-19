@@ -25,7 +25,7 @@ import UiState from '../../../stores/view/Superbot/UiState'
 import PlaybackState from '../../../stores/view/PlaybackState'
 import './style.css'
 
-@inject('renameTest')
+inject('renameTest')
 @observer
 export default class SuperbotTestList extends Component {
   static propTypes = {
