@@ -24,7 +24,7 @@ import UiState from  '../../../stores/view/Superbot/UiState'
 import ModalState from '../../../stores/view/ModalState'
 import PlaybackState from '../../../stores/view/PlaybackState'
 import SuperbotVerticalTabBar from '../../../components/Superbot/VerticalTabBar'
-import SuperbotSearchBar from '../../../components/Superbot/SearchBar'
+import SearchBar from '../../../components/SearchBar'
 import SuperbotTestList from '../../../components/Superbot/TestList'
 import ExecutionPlan from '../../../components/ExecutionPlan'
 import Runs from '../../../components/Runs'
@@ -108,7 +108,7 @@ export default class Navigation extends React.Component {
           <React.Fragment>
             {UiState.selectedView === 'Tests' && (
               <React.Fragment>
-                <SuperbotSearchBar
+                <SearchBar
                   value={UiState.filterTerm}
                   filter={UiState.changeFilter}
                 />

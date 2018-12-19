@@ -38,9 +38,10 @@ export default class SuperbotTestList extends Component {
     noMenu: PropTypes.bool,
   }
   render() {
+    const tests = UiState.filterTerm !== '' ? this.props.tests.filter(t => t.name.toLowerCase().includes(UiState.filterTerm.toLowerCase())) : this.props.tests
     return (
       <ul className={classNames('tests', { active: !this.props.collapsed })}>
-        {this.props.tests.map((test, index) => (
+        {tests.map((test, index) => (
           //TODO: id's for tests
           <li onClick={this.props.saveTestState} key={test.name}>
             {this.props.noMenu ? (
