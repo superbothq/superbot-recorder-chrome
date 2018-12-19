@@ -82,7 +82,6 @@ export default class Navigation extends React.Component {
     }
   }
   render() {
-    console.log("uistate", UiState.selectedView)
     return (
       <aside
         className="test-cases"

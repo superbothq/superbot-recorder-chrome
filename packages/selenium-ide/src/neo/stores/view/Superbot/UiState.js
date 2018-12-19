@@ -27,7 +27,8 @@ import WindowSession from '../../../IO/window-session'
 import BackgroundRecorder from '../../../IO/SideeX/recorder'
 
 class UiState {
-  views = ['Tests', 'Test suites', 'Executing']
+  views = ['Tests']
+  //TODO: change back to ['Tests', 'Test suites', 'Executing']
   @observable
   lastViewSelection = new Map()
   @observable

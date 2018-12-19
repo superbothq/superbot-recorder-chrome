@@ -67,9 +67,7 @@ class ModalState {
 
       return name === value || this.nameIsUnique(name, names)
     }
-    console.log("type", type)
-    console.log("value", value)
-    console.log("opts", opts)
+
     let desc = Types.test === type ? true : false
     return new Promise(res => {
       this.renameState = {

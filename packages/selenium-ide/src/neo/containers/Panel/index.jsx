@@ -364,7 +364,6 @@ export default class Panel extends React.Component {
     const newTests = this.state.tests.filter(t => t.name !== test.name)
     const index =  this.state.tests.findIndex(t => t.name === test.name)
     test.name = await UiState.nameTest()
-    UiState.selectedTest.name = test.name
     newTests.splice(index, 0, test)
     this.setState({ tests: newTests })
   }
@@ -456,6 +455,7 @@ export default class Panel extends React.Component {
                 load={loadProject.bind(undefined, this.state.project)}
                 save={() => saveProject(this.state.project)}
                 new={this.loadNewProject.bind(this)}
+                uploadTest={this.uploadTest}
               />
               <div
                 className={classNames('content', {
@@ -483,7 +483,6 @@ export default class Panel extends React.Component {
                   <SuperbotEditor
                     //TODO: use selectedTest.id
                     key={UiState.selectedTest.name}
-                    uploadTest={this.uploadTest}
                   />
                 </SplitPane>
               </div>

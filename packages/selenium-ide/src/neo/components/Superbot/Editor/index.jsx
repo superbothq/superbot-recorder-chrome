@@ -71,9 +71,6 @@ export default class SuperbotEditor extends React.Component {
   render() {
     return (
       <div style={{ width: '100%' }}>
-        <button
-          style={{ display: 'inline-block' }}
-          onClick={this.props.uploadTest}>Upload test!</button>
         <textarea
           autoComplete='off'
           autoCorrect='off'
@@ -82,10 +79,7 @@ export default class SuperbotEditor extends React.Component {
           style={{ 
             fontFamily: 'monospace',
             width: '100%',
-            height: '96.8%',
-            padding: 0,
-            position: 'relative',
-            right: '2px'
+            height: '100%'
           }}
           name='content'
           onChange={(event) => this.setState({ [event.target.name]: event.target.value })}
