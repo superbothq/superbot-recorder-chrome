@@ -25,6 +25,7 @@ import NewButton from '../ActionButtons/New'
 import OpenButton from '../ActionButtons/Open'
 import SaveButton from '../ActionButtons/Save'
 import MoreButton from '../ActionButtons/More'
+import SendButton from '../ActionButtons/Send'
 import ListMenu, { ListMenuItem } from '../ListMenu'
 import { showChangelog } from '../Changelog'
 import './style.css'
@@ -73,6 +74,10 @@ export default class ProjectHeader extends React.Component {
           <i className="si-pencil" />
         </div>
         <span className="buttons">
+          <SendButton
+            onClick={this.props.uploadTest}
+          />
+        {/* TODO: something with these
           <NewButton onClick={this.props.new} />
           <OpenButton
             onFileSelected={this.props.load}
@@ -83,6 +88,7 @@ export default class ProjectHeader extends React.Component {
             unsaved={this.props.changed}
             onClick={this.props.save}
           />
+          */}
           <ListMenu
             width={250}
             padding={-5}
@@ -93,6 +99,7 @@ export default class ProjectHeader extends React.Component {
             </ListMenuItem>
             <ListMenuItem onClick={showChangelog}>{"What's new"}</ListMenuItem>
           </ListMenu>
+
         </span>
       </div>
     )

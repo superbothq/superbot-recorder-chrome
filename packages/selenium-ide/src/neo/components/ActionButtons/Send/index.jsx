@@ -9,7 +9,7 @@ export default class SendButton extends React.Component {
       <ActionButton
         data-tip={`<p>Create new project <span style="color: #929292;padding-left: 5px;"></span></p>`}
         {...props}
-        className={classNames('si-new-project', this.props.className)}
+        className={classNames('si-send', this.props.className)}
       /> // eslint-disable-line react/prop-types
     )
   }

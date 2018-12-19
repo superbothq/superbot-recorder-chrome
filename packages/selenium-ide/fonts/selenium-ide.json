@@ -86,7 +86,7 @@
       "prevSize": 32
     },
     {
-      "order": 0,
+      "order": 91,
       "name": "gauge-12",
       "prevSize": 32
     },
@@ -111,7 +111,7 @@
       "prevSize": 32
     },
     {
-      "order": 0,
+      "order": 89,
       "name": "ic_arrow_down",
       "prevSize": 32
     },
@@ -177,7 +177,7 @@
       "prevSize": 32
     },
     {
-      "order": 0,
+      "order": 90,
       "name": "stop",
       "prevSize": 32
     }
@@ -210,10 +210,6 @@
           "fill": "rgb(80, 80, 80)"
         }
       ],
-      "grid": 0,
-      "tags": [
-        "ic_new_folder@3x"
-      ],
       "colorPermutations": {
         "2326018080801": [
           {
@@ -227,7 +223,11 @@
           }
         ]
       },
-      "defaultCode": 59678
+      "tags": [
+        "ic_new_folder@3x"
+      ],
+      "defaultCode": 59678,
+      "grid": 0
     },
     {
       "paths": [
@@ -238,10 +238,6 @@
           "fill": "rgb(232, 6, 0)"
         }
       ],
-      "grid": 0,
-      "tags": [
-        "ic_record_circle@3x"
-      ],
       "colorPermutations": {
         "2326018080801": [
           {
@@ -249,7 +245,11 @@
           }
         ]
       },
-      "defaultCode": 59679
+      "tags": [
+        "ic_record_circle@3x"
+      ],
+      "defaultCode": 59679,
+      "grid": 0
     },
     {
       "paths": [
@@ -260,10 +260,6 @@
           "fill": "rgb(232, 6, 0)"
         }
       ],
-      "grid": 0,
-      "tags": [
-        "ic_record_tipo@3x"
-      ],
       "colorPermutations": {
         "2326018080801": [
           {
@@ -271,7 +267,11 @@
           }
         ]
       },
-      "defaultCode": 59680
+      "tags": [
+        "ic_record_tipo@3x"
+      ],
+      "defaultCode": 59680,
+      "grid": 0
     },
     {
       "paths": [
@@ -293,8 +293,8 @@
       "tags": [
         "ic_download"
       ],
-      "grid": 0,
-      "defaultCode": 59649
+      "defaultCode": 59649,
+      "grid": 0
     },
     {
       "paths": [
@@ -328,8 +328,8 @@
       "tags": [
         "ic_filter"
       ],
-      "grid": 0,
-      "defaultCode": 59669
+      "defaultCode": 59669,
+      "grid": 0
     },
     {
       "paths": [
@@ -343,8 +343,8 @@
       "tags": [
         "ic_simaniya"
       ],
-      "grid": 0,
-      "defaultCode": 59675
+      "defaultCode": 59675,
+      "grid": 0
     },
     {
       "paths": [
@@ -366,8 +366,8 @@
       "tags": [
         "ic_stop_outo_running"
       ],
-      "grid": 0,
-      "defaultCode": 59676
+      "defaultCode": 59676,
+      "grid": 0
     },
     {
       "paths": [
@@ -381,8 +381,8 @@
       "tags": [
         "ic_stop"
       ],
-      "grid": 0,
-      "defaultCode": 59677
+      "defaultCode": 59677,
+      "grid": 0
     },
     {
       "paths": [
@@ -400,8 +400,8 @@
       "tags": [
         "ic_open"
       ],
-      "grid": 0,
-      "defaultCode": 59653
+      "defaultCode": 59653,
+      "grid": 0
     },
     {
       "paths": [
@@ -411,8 +411,8 @@
       "tags": [
         "pencil"
       ],
-      "grid": 0,
-      "defaultCode": 59673
+      "defaultCode": 59673,
+      "grid": 0
     },
     {
       "paths": [
@@ -438,8 +438,8 @@
       "tags": [
         "ic_go_down"
       ],
-      "grid": 0,
-      "defaultCode": 59671
+      "defaultCode": 59671,
+      "grid": 0
     },
     {
       "paths": [
@@ -453,8 +453,8 @@
       "tags": [
         "arrow_d"
       ],
-      "grid": 0,
-      "defaultCode": 59672
+      "defaultCode": 59672,
+      "grid": 0
     },
     {
       "paths": [
@@ -476,8 +476,8 @@
       "tags": [
         "ic_speed_6"
       ],
-      "grid": 0,
-      "defaultCode": 59660
+      "defaultCode": 59660,
+      "grid": 0
     },
     {
       "paths": [
@@ -499,8 +499,8 @@
       "tags": [
         "ic_speed_5"
       ],
-      "grid": 0,
-      "defaultCode": 59662
+      "defaultCode": 59662,
+      "grid": 0
     },
     {
       "paths": [
@@ -522,8 +522,8 @@
       "tags": [
         "ic_speed_4"
       ],
-      "grid": 0,
-      "defaultCode": 59666
+      "defaultCode": 59666,
+      "grid": 0
     },
     {
       "paths": [
@@ -545,8 +545,8 @@
       "tags": [
         "ic_speed_3"
       ],
-      "grid": 0,
-      "defaultCode": 59667
+      "defaultCode": 59667,
+      "grid": 0
     },
     {
       "paths": [
@@ -568,8 +568,8 @@
       "tags": [
         "ic_speed_2"
       ],
-      "grid": 0,
-      "defaultCode": 59668
+      "defaultCode": 59668,
+      "grid": 0
     },
     {
       "paths": [
@@ -591,8 +591,8 @@
       "tags": [
         "ic_speed_1"
       ],
-      "grid": 0,
-      "defaultCode": 59674
+      "defaultCode": 59674,
+      "grid": 0
     },
     {
       "paths": [
@@ -606,8 +606,8 @@
       "tags": [
         "ic_new_search"
       ],
-      "grid": 0,
-      "defaultCode": 59670
+      "defaultCode": 59670,
+      "grid": 0
     },
     {
       "paths": [
@@ -621,8 +621,8 @@
       "tags": [
         "ic_tick"
       ],
-      "grid": 0,
-      "defaultCode": 59648
+      "defaultCode": 59648,
+      "grid": 0
     },
     {
       "paths": [
@@ -632,8 +632,8 @@
       "tags": [
         "tik"
       ],
-      "grid": 0,
-      "defaultCode": 59664
+      "defaultCode": 59664,
+      "grid": 0
     },
     {
       "paths": [
@@ -642,8 +642,8 @@
       "tags": [
         "ic_add"
       ],
-      "grid": 0,
-      "defaultCode": 59661
+      "defaultCode": 59661,
+      "grid": 0
     },
     {
       "paths": [
@@ -652,8 +652,8 @@
       "tags": [
         "ic_arrow_down"
       ],
-      "grid": 0,
-      "defaultCode": 59649
+      "defaultCode": 59649,
+      "grid": 0
     },
     {
       "paths": [
@@ -662,8 +662,8 @@
       "tags": [
         "ic_cross_delete"
       ],
-      "grid": 0,
-      "defaultCode": 59674
+      "defaultCode": 59674,
+      "grid": 0
     },
     {
       "paths": [
@@ -672,8 +672,8 @@
       "tags": [
         "ic_delete"
       ],
-      "grid": 0,
-      "defaultCode": 59650
+      "defaultCode": 59650,
+      "grid": 0
     },
     {
       "paths": [
@@ -682,8 +682,8 @@
       "tags": [
         "ic_go_down"
       ],
-      "grid": 0,
-      "defaultCode": 59651
+      "defaultCode": 59651,
+      "grid": 0
     },
     {
       "paths": [
@@ -694,8 +694,8 @@
       "tags": [
         "ic_info_i"
       ],
-      "grid": 0,
-      "defaultCode": 59652
+      "defaultCode": 59652,
+      "grid": 0
     },
     {
       "paths": [
@@ -706,8 +706,8 @@
       "tags": [
         "ic_more"
       ],
-      "grid": 0,
-      "defaultCode": 59665
+      "defaultCode": 59665,
+      "grid": 0
     },
     {
       "paths": [
@@ -719,8 +719,8 @@
       "tags": [
         "ic_play_all"
       ],
-      "grid": 0,
-      "defaultCode": 59654
+      "defaultCode": 59654,
+      "grid": 0
     },
     {
       "paths": [
@@ -729,8 +729,8 @@
       "tags": [
         "ic_play"
       ],
-      "grid": 0,
-      "defaultCode": 59655
+      "defaultCode": 59655,
+      "grid": 0
     },
     {
       "paths": [
@@ -740,8 +740,8 @@
       "tags": [
         "ic_pouse"
       ],
-      "grid": 0,
-      "defaultCode": 59656
+      "defaultCode": 59656,
+      "grid": 0
     },
     {
       "paths": [
@@ -750,8 +750,8 @@
       "tags": [
         "ic_remove"
       ],
-      "grid": 0,
-      "defaultCode": 59657
+      "defaultCode": 59657,
+      "grid": 0
     },
     {
       "paths": [
@@ -761,8 +761,8 @@
       "tags": [
         "ic_resource"
       ],
-      "grid": 0,
-      "defaultCode": 59658
+      "defaultCode": 59658,
+      "grid": 0
     },
     {
       "paths": [
@@ -774,8 +774,8 @@
       "tags": [
         "ic_save"
       ],
-      "grid": 0,
-      "defaultCode": 59659
+      "defaultCode": 59659,
+      "grid": 0
     },
     {
       "paths": [
@@ -786,8 +786,8 @@
       "tags": [
         "ic_select"
       ],
-      "grid": 0,
-      "defaultCode": 59663
+      "defaultCode": 59663,
+      "grid": 0
     },
     {
       "paths": [
@@ -796,8 +796,8 @@
       "tags": [
         "ic_stop"
       ],
-      "grid": 0,
-      "defaultCode": 59669
+      "defaultCode": 59669,
+      "grid": 0
     }
   ],
   "colorThemes": [
@@ -821,13 +821,11 @@
     "showGlyphs": true,
     "showQuickUse": true,
     "showQuickUse2": true,
-    "showSVGs": true,
+    "showSVGs": false,
     "fontPref": {
-      "prefix": "si-",
+      "prefix": "icon-",
       "metadata": {
-        "fontFamily": "selenium-ide",
-        "majorVersion": 1,
-        "minorVersion": 0
+        "fontFamily": "icomoon"
       },
       "metrics": {
         "emSize": 1024,
@@ -835,27 +833,25 @@
         "whitespace": 50
       },
       "embed": false,
-      "showSelector": true,
-      "showMetrics": true,
-      "showMetadata": true,
-      "showVersion": true,
-      "noie8": true,
-      "ie7": false,
-      "selector": "",
-      "includeMetadata": false
+      "hideFormats": true
     },
     "imagePref": {
       "prefix": "icon-",
-      "png": true,
-      "useClassSelector": true,
+      "png": false,
+      "useClassSelector": false,
       "color": 0,
       "bgColor": 16777215,
-      "classSelector": ".icon"
+      "classSelector": ".icon",
+      "name": "icomoon",
+      "height": 32,
+      "columns": 16,
+      "margin": 16,
+      "minifyJs": false,
+      "sprite": false
     },
     "historySize": 50,
     "showCodes": true,
-    "gridSize": 16,
-    "showLiga": false
+    "gridSize": 16
   },
   "IcoMoonType": "icon-set"
 }
