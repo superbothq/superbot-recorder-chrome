@@ -16,7 +16,7 @@ export default class SuperbotEditor extends React.Component {
     this.addCommand = this.addCommand.bind(this)
     this.removeCommand = this.removeCommand.bind(this)
     this.state = {
-      content: UiState.selectedTest.files ? UiState.selectedTest.files[0].content : null
+      content: UiState.selectedTest.content ? UiState.selectedTest.content : UiState.selectedTest.files ? UiState.selectedTest.files[0].content : null
     }
   }
   static propTypes = {
@@ -65,15 +65,15 @@ export default class SuperbotEditor extends React.Component {
       UiState.focusNavigation()
     }
   }
+  componentDidUpdate() {
+    UiState.selectedTest.content = this.state.content
+  }
   render() {
-    console.log("ASDASD", UiState.selectedTest)
-    console.log("bool", UiState.selectedTest.files !== undefined)
-    console.log("file",UiState.selectedTest.files !== undefined ? UiState.selectedTest.files[0].content : null)
     return (
       <div style={{ width: '100%' }}>
         <button
           style={{ display: 'inline-block' }}
-          onClick={() => this.props.uploadTest(UiState.selectedTest, this.state.content)}>Upload test!</button>
+          onClick={this.props.uploadTest}>Upload test!</button>
         <textarea
           autoComplete='off'
           autoCorrect='off'

@@ -42,7 +42,7 @@ export default class SuperbotTestList extends Component {
       <ul className={classNames('tests', { active: !this.props.collapsed })}>
         {this.props.tests.map((test, index) => (
           //TODO: id's for tests
-          <li key={test.name}>
+          <li onClick={this.props.saveTestState} key={test.name}>
             {this.props.noMenu ? (
               <SuperbotTest
                 key={test.name}

@@ -289,30 +289,39 @@ export default class Panel extends React.Component {
       .then(body => this.setState({ tests: body.tests }))
       .catch(err => console.log(err))
   }
-                            //temp
-  uploadTest = async (test, content) => {
-    console.log("content", content)
-    console.log('uploadTest', test)
-    let name
+
+  uploadTest = async () => {
+    const test = UiState.selectedTest
+    if(test.content === undefined){
+      ModalState.showAlert({
+        title: 'No script provided!',
+        description: 'You need to provide a script before uploading to cloud.',
+        confirmLabel: 'Okay',
+      })
+      return
+    }
+    let name = ''
     if(test.name === '' || test.name === undefined){
       name = await UiState.nameTest()
-      console.log("name log", name)
     }
     const tempTest = {
-      name: test ? test.name : name,
+      name: name === '' ? test.name : name,
       description: 'desc',
       organization: this.state.user.username,
-      file: []
+      file: undefined
     }
+
+    //new tests always appear on top
+    const sorted = this.sortByIndex(this.state.tests, 0, tempTest)
+    this.setState({ tests: sorted })
+
     let formData = new FormData()
     for (let key in tempTest){
-      formData.append(key, tempTest[key])
+      if(key !== 'content'){
+        formData.append(key, tempTest[key])
+      }
     }
-    formData.append('file', new Blob([content], { type: 'text/html'}),`${tempTest.name}.side`)
-
-    console.log('formData', ...formData)
-    console.log("blob", new Blob([content], { type: 'text/html'}))
-    console.log('user', this.state.user)
+    formData.append('file', new Blob([test.content], { type: 'text/html'}),`${tempTest.name}.side`)
 
     fetch('https://superbot.cloud/api/v1/tests', {
       method: 'POST',
@@ -331,18 +340,29 @@ export default class Panel extends React.Component {
       //but sends back a test with field >files
       console.log("test before", test)
       delete Object.assign(test, {['files']: [test['file']] })['file'];
-      const otherTests = this.state.tests.filter(t => t.name !== test.name)
-      this.setState({ tests: [...otherTests, test] })
-      console.log({ otherTests })
-      console.log({ test })
+      const newTests = this.sortByIndex(this.state.tests, undefined, test)
+      this.setState({ tests: newTests })
       UiState.selectTest(test)
 
     }).catch(err => console.log(err))
   }
 
+  sortByIndex = (tests, _index = undefined, test) => {
+    const newTests = tests.filter(t => t.name !== test.name)
+    const index = _index !== undefined ? _index : tests.findIndex(t => t.name === test.name)
+    newTests.splice(index, 0, test)
+    return newTests
+  }
+
   createTest = async () => {
     const test = await UiState.createTest()
-    this.setState({ tests: [...this.state.tests, test] })
+    const newTests = this.sortByIndex(this.state.tests, 0, test)
+    this.setState({ tests: newTests })
+  }
+
+  saveTestState = () => {
+    const newTests = this.sortByIndex(this.state.tests, undefined, UiState.selectedTest)
+    this.setState({ tests: newTests })
   }
 
   removeTest = (test) => {
@@ -365,7 +385,7 @@ export default class Panel extends React.Component {
   }
 
   componentDidMount() {
-    //if(false){
+    if(false){
       let creds
       try {
       creds = JSON.parse(window.localStorage.getItem('cloud_creds'))
@@ -381,13 +401,13 @@ export default class Panel extends React.Component {
         })
 
       }
-    /*
+
     } else {
       this.setState({ user: { email: 'reijonen.samuli@gmail.com',token: '7b2bd8c544a75a97a5c6b643eb8e9489', username: 'SamuliR' }}, () => {
         this.fetchTests()
       })
     }
-    */
+
   }
   componentWillUnmount() {
     if (isProduction) {
@@ -448,6 +468,7 @@ export default class Panel extends React.Component {
                     duplicateTest={this.state.project.duplicateTestCase}
                     createTest={this.createTest}
                     removeTest={this.removeTest}
+                    saveTestState={this.saveTestState}
                   />
                   <SuperbotEditor
                     //TODO: use selectedTest.id
