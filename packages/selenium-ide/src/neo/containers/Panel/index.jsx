@@ -51,6 +51,7 @@ import { loadProject, saveProject, loadJSProject, uploadTest } from '../../IO/fi
 import LoginPage from '../../components/LoginPage'
 import SuperbotEditor from '../../components/Superbot/Editor';
 
+import './style.css'
 
 if (!isTest) {
   const api = require('../../../api')
@@ -392,31 +393,29 @@ export default class Panel extends React.Component {
     }).catch(e => console.log("Fetch: Error deleting test!", e))
   }
 
-  componentDidMount() {
-    if(false){
-      let creds
-      try {
-      creds = JSON.parse(window.localStorage.getItem('cloud_creds'))
-      console.log('creds:', creds)
-      } catch(e) {
-        console.log(e)
+  handleLogin = () => {
+    fetch('https://superbot.cloud/api/v1/??')
+    .then(res => {
+      if(res.status === 200){ //WARN: possible bug!!
+        return res.json()
+      } else {
+        return Promise.reject('Failed to login!')
       }
-      if(creds !== null){
-        this.setState({ user: creds }, () => {
-          if(this.state.tests === undefined || this.state.tests.length === 0){
-            this.fetchTests()
-          }
-        })
-
-      }
-
-    } else {
-      this.setState({ user: { email: 'reijonen.samuli@gmail.com',token: '7b2bd8c544a75a97a5c6b643eb8e9489', username: 'SamuliR' }}, () => {
-        this.fetchTests()
-      })
-    }
-
+    }).then(body => console.log('login body', body))
+    .catch(e => console.log(e))
   }
+
+  componentDidMount() {
+    /*
+    this.handleLogin()
+    this.fetchTests()
+    */
+
+    this.setState({ user: { email: 'reijonen.samuli@gmail.com', token: '7b2bd8c544a75a97a5c6b643eb8e9489', username: 'SamuliR' }}, () => {
+      //this.fetchTests()
+    })
+  }
+
   componentWillUnmount() {
     if (isProduction) {
       clearInterval(this.moveInterval)
@@ -427,13 +426,20 @@ export default class Panel extends React.Component {
   render() {
     if(Object.keys(this.state.user).length === 0){
       return (
-        <LoginPage />
+        <LoginPage handleLogin={this.handleLogin} />
       )
     }
+    console.log("ASDJOGBEAIH")
     if(this.state.tests === undefined){
       return (
-        <div>
-          Loading...
+        <div className='loading-screen'>
+          <div className="spinner">
+            <div className="rect1"></div>
+            <div className="rect2"></div>
+            <div className="rect3"></div>
+            <div className="rect4"></div>
+            <div className="rect5"></div>
+          </div>
         </div>
       )
     }

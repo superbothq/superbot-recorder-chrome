@@ -4,6 +4,7 @@ _MACOSX/
 .DS_Store
 TODO
 build
+*.backup
 packages/selenium-ide/selenium
 .peru
 .idea
