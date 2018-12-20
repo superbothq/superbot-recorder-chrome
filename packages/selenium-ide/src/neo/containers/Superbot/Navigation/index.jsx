@@ -118,6 +118,7 @@ export default class Navigation extends React.Component {
                   removeTest={this.props.removeTest}
                   saveTestState={this.props.saveTestState}
                   renameTest={this.props.renameTest}
+                  duplicateTest={this.props.duplicateTest}
                 />
               </React.Fragment>
             )}

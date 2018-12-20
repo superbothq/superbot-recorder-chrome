@@ -348,6 +348,24 @@ export default class Panel extends React.Component {
     }).catch(err => console.log(err))
   }
 
+  duplicateTest = (test) => {
+    console.log('param test', test)
+
+    const similar = this.state.tests.filter(t => t.name === test.name)
+    console.log('similar', similar.length)
+
+    test.name = `${test.name} (${similar.length})`
+    console.log('after rename', test.name)
+
+    const otherTests = this.state.tests
+    console.log('this.state.tests', otherTests)
+
+    otherTests.splice(0, 0, test)
+    console.log('otherTests after splice', otherTests)
+
+    this.setState({ tests: otherTests })
+  }
+
   sortByIndex = (tests, _index = undefined, test) => {
     const newTests = tests.filter(t => t.name !== test.name)
     const index = _index !== undefined ? _index : tests.findIndex(t => t.name === test.name)
@@ -412,7 +430,7 @@ export default class Panel extends React.Component {
     */
 
     this.setState({ user: { email: 'reijonen.samuli@gmail.com', token: '7b2bd8c544a75a97a5c6b643eb8e9489', username: 'SamuliR' }}, () => {
-      //this.fetchTests()
+      this.fetchTests()
     })
   }
 
@@ -429,7 +447,6 @@ export default class Panel extends React.Component {
         <LoginPage handleLogin={this.handleLogin} />
       )
     }
-    console.log("ASDJOGBEAIH")
     if(this.state.tests === undefined){
       return (
         <div className='loading-screen'>
@@ -480,11 +497,11 @@ export default class Panel extends React.Component {
                   <SuperbotNavigation
                     tests={this.state.tests}
                     suites={this.state.project.suites}
-                    duplicateTest={this.state.project.duplicateTestCase}
                     createTest={this.createTest}
                     removeTest={this.removeTest}
                     saveTestState={this.saveTestState}
                     renameTest={this.renameTest}
+                    duplicateTest={this.duplicateTest}
                   />
                   <SuperbotEditor
                     //TODO: use selectedTest.id
