@@ -429,9 +429,7 @@ export default class Panel extends React.Component {
     this.fetchTests()
     */
 
-    this.setState({ user: { email: 'reijonen.samuli@gmail.com', token: '7b2bd8c544a75a97a5c6b643eb8e9489', username: 'SamuliR' }}, () => {
-      this.fetchTests()
-    })
+
   }
 
   componentWillUnmount() {
