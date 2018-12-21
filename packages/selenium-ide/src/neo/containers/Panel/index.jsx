@@ -291,18 +291,22 @@ export default class Panel extends React.Component {
       .catch(err => console.log(err))
   }
 
-  uploadTest = async () => {
-    const test = UiState.selectedTest
-    if(test.content === undefined){
+  prepareForUpload = async (_test = undefined) => {
+    const test = _test ? _test : UiState.selectedTest
+
+    console.log('test content', test.content)
+    console.log('_test', _test)
+    if(test.content === undefined && _test === undefined){
       ModalState.showAlert({
-        title: 'No script provided!',
-        description: 'You need to provide a script before uploading to cloud.',
+        title: 'Script Missing!',
+        description: 'You need to provide a script before uploading to the cloud.',
         confirmLabel: 'Okay',
       })
-      return
+      return false
     }
+
     let name = ''
-    if(test.name === '' || test.name === undefined){
+    if(test.name === undefined || test.name === ''){
       name = await UiState.nameTest()
     }
     const tempTest = {
@@ -321,7 +325,21 @@ export default class Panel extends React.Component {
         formData.append(key, tempTest[key])
       }
     }
-    formData.append('file', new Blob([test.content], { type: 'text/html'}),`${tempTest.name}.side`)
+
+    if(_test === undefined){
+      formData.append('file', new Blob([test.content], { type: 'text/html'}),`${tempTest.name}.bot`)
+    } else {
+      formData.append('file', new Blob([test.files[0].content], { type: 'text/html'}),`${tempTest.name}.bot`)
+    }
+
+    return formData
+  }
+
+  uploadTest = async () => {
+    const formData = await this.prepareForUpload()
+    if(formData === false) {
+      return
+    }
 
     fetch('https://superbot.cloud/api/v1/tests', {
       method: 'POST',
@@ -381,9 +399,38 @@ export default class Panel extends React.Component {
   renameTest = async (test) => {
     const newTests = this.state.tests.filter(t => t.name !== test.name)
     const index =  this.state.tests.findIndex(t => t.name === test.name)
-    test.name = await UiState.nameTest()
+    const newName = await UiState.nameTest()
+    //keep track of tests old name so it can be renamed/updated/deleted because test names are used as id's
+    if(test.oldName === undefined){
+      test.oldName = test.name
+    }
+    test.name = newName
     newTests.splice(index, 0, test)
-    this.setState({ tests: newTests })
+    const formData = await this.prepareForUpload(test)
+    if(formData === false) return
+
+    fetch('https://superbot.cloud/api/v1/tests', {
+      method: 'POST',
+      body: formData,
+      headers: { 'Authorization': `Token token="${this.state.user.token}", email="${this.state.user.email}"`
+      }
+    }).then(res => {
+      if(res.status === 200){
+        return res.json()
+      } else {
+        return Promise.reject('Error uploading test!')
+      }
+    }).then(test => {
+      //TODO: server acceps a test with field >file
+      //but sends back a test with field >files
+      delete Object.assign(test, {['files']: [test['file']] })['file'];
+      const otherTests = this.state.tests.filter(t => t.name !== test.oldName)
+      const newTests = this.sortByIndex(otherTests, undefined, test)
+      this.setState({ tests: newTests })
+      UiState.selectTest(test)
+
+    }).catch(err => console.log(err))
+    this.removeTest(test)
   }
 
   saveTestState = () => {
@@ -392,14 +439,15 @@ export default class Panel extends React.Component {
   }
 
   removeTest = (test) => {
-    fetch(`https://superbot.cloud/api/v1/tests/${test.name}`,{
+    const name = test.oldName ? test.oldName : test.name
+    fetch(`https://superbot.cloud/api/v1/tests/${name}`,{
       method: 'DELETE',
       headers: {
         'Authorization': `Token token="${this.state.user.token}", email="${this.state.user.email}"`
       }
     }).then(res => {
       if(res.status === 204){
-        const newTests = this.state.tests.filter(t => t.name !== test.name)
+        const newTests = this.state.tests.filter(t => t.name !== name)
         this.setState({ tests: newTests }, () => {
           //a.k.a select empty test
           UiState.selectTest({ name: '', description: '', organization: null})

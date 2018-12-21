@@ -89,16 +89,7 @@ export default class ProjectHeader extends React.Component {
             onClick={this.props.save}
           />
           */}
-          <ListMenu
-            width={250}
-            padding={-5}
-            opener={<MoreButton canFocus={true} />}
-          >
-            <ListMenuItem href="https://www.npmjs.com/package/selenium-side-runner">
-              {'Running in CI'}
-            </ListMenuItem>
-            <ListMenuItem onClick={showChangelog}>{"What's new"}</ListMenuItem>
-          </ListMenu>
+          <button onClick={showChangelog}>What's New!</button>
 
         </span>
       </div>

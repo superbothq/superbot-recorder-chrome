@@ -16,7 +16,7 @@ export default class SuperbotEditor extends React.Component {
     this.addCommand = this.addCommand.bind(this)
     this.removeCommand = this.removeCommand.bind(this)
     this.state = {
-      content: UiState.selectedTest.content ? UiState.selectedTest.content : UiState.selectedTest.files ? UiState.selectedTest.files[0].content : null
+      content: UiState.selectedTest.content ? UiState.selectedTest.content : UiState.selectedTest.files ? UiState.selectedTest.files[0].content : undefined
     }
   }
   static propTypes = {
