@@ -309,7 +309,6 @@ export default class Panel extends React.Component {
       name: name === '' ? test.name : name,
       description: 'desc',
       organization: this.state.user.username,
-      file: undefined
     }
 
     //new tests always appear on top
@@ -412,23 +411,28 @@ export default class Panel extends React.Component {
   }
 
   handleLogin = () => {
-    fetch('https://superbot.cloud/api/v1/??')
+    fetch('https://superbot.cloud/login/cloud/credentials.json')
     .then(res => {
-      if(res.status === 200){ //WARN: possible bug!!
+      console.log(res)
+      if(res.status === 200 && res.redirected === false){
         return res.json()
+      } else if (res.status === 200 && res.redirected === true){
+        return Promise.reject('Login needed!')
       } else {
-        return Promise.reject('Failed to login!')
+        return Promise.reject('Error fetching credentials!')
       }
-    }).then(body => console.log('login body', body))
-    .catch(e => console.log(e))
+    }).then(creds => {
+      console.log('login creds', creds)
+      this.setState({ user: creds }, this.fetchTests)
+    }).catch(e => console.log(e))
   }
 
   componentDidMount() {
-    /*
-    this.handleLogin()
-    this.fetchTests()
-    */
+    //this.handleLogin()
 
+    this.setState({ user: { email: 'reijonen.samuli@gmail.com', token: '7b2bd8c544a75a97a5c6b643eb8e9489', username: 'SamuliR' }}, () => {
+      this.fetchTests()
+    })
 
   }
 
