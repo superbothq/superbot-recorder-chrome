@@ -7,7 +7,6 @@ class LoginPage extends Component {
   }
 
   componentWillUnmount(){
-    console.log("UNMOUNT", this.loginInterval)
     clearInterval(this.loginInterval)
   }
 
@@ -21,7 +20,7 @@ class LoginPage extends Component {
 
         <a href="https://superbot.cloud/login" target='_blank'><button id='login-form-button' onClick={this.waitForLogin}>Login</button></a>
 
-        <p style={{ color: 'black', fontSize: 16 }}>Don't have an account? <a href="https://superbot.cloud/signup" target='_blank' style={{ color: 'steelblue' }}>Create one here!</a></p>
+        <p style={{ color: 'black', fontSize: 16 }}>Don't have an account? <a href="https://superbot.cloud/signup" target='_blank' style={{ color: 'steelblue' }} onClick={this.waitForLogin}>Create one here!</a></p>
       </div>
     )
   }

@@ -294,9 +294,7 @@ export default class Panel extends React.Component {
   prepareForUpload = async (_test = undefined) => {
     const test = _test ? _test : UiState.selectedTest
 
-    console.log('test content', test.content)
-    console.log('_test', _test)
-    if(test.content === undefined && _test === undefined){
+    if(test.files === undefined && test.content === undefined && _test === undefined){
       ModalState.showAlert({
         title: 'Script Missing!',
         description: 'You need to provide a script before uploading to the cloud.',
@@ -326,7 +324,9 @@ export default class Panel extends React.Component {
       }
     }
 
-    if(_test === undefined){
+    if(_test === undefined && test.content === undefined){
+      formData.append('file', new Blob([test.files[0].content], { type: 'text/html'}),`${tempTest.name}.bot`)
+    } else if(_test === undefined){
       formData.append('file', new Blob([test.content], { type: 'text/html'}),`${tempTest.name}.bot`)
     } else {
       formData.append('file', new Blob([test.files[0].content], { type: 'text/html'}),`${tempTest.name}.bot`)
@@ -356,7 +356,6 @@ export default class Panel extends React.Component {
     }).then(test => {
       //TODO: server acceps a test with field >file
       //but sends back a test with field >files
-      console.log("test before", test)
       delete Object.assign(test, {['files']: [test['file']] })['file'];
       const newTests = this.sortByIndex(this.state.tests, undefined, test)
       this.setState({ tests: newTests })
@@ -365,22 +364,26 @@ export default class Panel extends React.Component {
     }).catch(err => console.log(err))
   }
 
-  duplicateTest = (test) => {
-    console.log('param test', test)
 
-    const similar = this.state.tests.filter(t => t.name === test.name)
-    console.log('similar', similar.length)
+  duplicateTest = (_test) => {
+    const test = {..._test}
 
-    test.name = `${test.name} (${similar.length})`
-    console.log('after rename', test.name)
+    let foundNumber = 0
+    this.state.tests.forEach(t => {
+      if(t.name === (foundNumber ? `${test.name} (${foundNumber})` : test.name))
+      foundNumber++
+    })
+    if(foundNumber){
+      test.name = `${test.name} (${foundNumber})`
+    }
 
-    const otherTests = this.state.tests
-    console.log('this.state.tests', otherTests)
+    let index = this.state.tests.findIndex(t => t.name === _test.name)
 
-    otherTests.splice(0, 0, test)
-    console.log('otherTests after splice', otherTests)
+    const currentTests = this.state.tests
+    currentTests.splice(index++, 0, test)
 
-    this.setState({ tests: otherTests })
+    this.setState({ tests: currentTests })
+    UiState.selectTest(test)
   }
 
   sortByIndex = (tests, _index = undefined, test) => {
@@ -476,12 +479,7 @@ export default class Panel extends React.Component {
   }
 
   componentDidMount() {
-    //this.handleLogin()
-
-    this.setState({ user: { email: 'reijonen.samuli@gmail.com', token: '7b2bd8c544a75a97a5c6b643eb8e9489', username: 'SamuliR' }}, () => {
-      this.fetchTests()
-    })
-
+    this.handleLogin()
   }
 
   componentWillUnmount() {
