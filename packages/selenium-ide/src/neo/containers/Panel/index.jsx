@@ -291,7 +291,48 @@ export default class Panel extends React.Component {
     }).catch(e => console.log(e))
   }
 
+  uploadTest = () => {
+    const suite = {
+      name: this.state.project.name,
+      organization: this.state.user.username,
+      description: '',
+      files: [{ content: project.toJS() }]
+    }
 
+    console.log('user', this.state.user)
+    console.log('suite', suite)
+    console.log('uistate selected test:', UiState.selectedTest)
+
+    let formData = new FormData()
+
+    for (let key in suite){
+      if(key !== 'files'){
+        formData.append(key, suite[key])
+      }
+    }
+
+    for(let i = 0; i < suite.files.length; i++){
+      formData.append('files[]', new Blob([JSON.stringify(suite.files[i].content)]), UiState.selectedTest.test.name)
+    }
+
+    fetch('https://superbot.cloud/api/v1/tests', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Authorization': `Token token="${this.state.user.token}", email="${this.state.user.email}"`,
+      }
+    }).then(res => {
+      if(res.status === 200){
+        return res.json()
+      } else {
+        return Promise.reject('Error updating suite!')
+      }
+    }).then(() => {
+      UiState.saved()
+      alert('"save notification here"')
+    })
+    .catch(e => console.log(e))
+  }
 
   componentWillMount(){
     this.handleLogin()
@@ -305,6 +346,13 @@ export default class Panel extends React.Component {
     }
   }
   render() {
+    if(this.state.user === null){
+      return (
+        <LoginPage
+          handleLogin={this.handleLogin}
+        />
+      )
+    }
     return (
       <div className="container" onKeyDown={this.handleKeyDownAlt.bind(this)}>
         <SuiteDropzone
@@ -331,7 +379,7 @@ export default class Panel extends React.Component {
                 }}
                 load={loadProject.bind(undefined, this.state.project)}
                 //save={() => saveProject(this.state.project)}
-                save={() => console.log('save project')}
+                save={this.uploadTest}
                 new={this.loadNewProject.bind(this)}
               />
               <div
@@ -339,7 +387,14 @@ export default class Panel extends React.Component {
                   dragging: UiState.navigationDragging,
                 })}
               >
-
+              <Editor
+                url={this.state.project.url}
+                urls={this.state.project.urls}
+                setUrl={this.state.project.setUrl}
+                test={UiState.displayedTest}
+                callstackIndex={UiState.selectedTest.stack}
+              />
+              {/*
                 <SplitPane
                   split="vertical"
                   minSize={UiState.minNavigationWidth}
@@ -360,7 +415,7 @@ export default class Panel extends React.Component {
                     callstackIndex={UiState.selectedTest.stack}
                   />
                 </SplitPane>
-
+              */}
               </div>
             </div>
             <Console
