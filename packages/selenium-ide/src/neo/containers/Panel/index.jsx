@@ -46,6 +46,7 @@ import '../../styles/layout.css'
 import '../../styles/resizer.css'
 import { isProduction, isTest, userAgent } from '../../../common/utils'
 import Logger from '../../stores/view/Logs'
+import LoginPage from '../../components/LoginPage'
 
 import { loadProject, saveProject, loadJSProject } from '../../IO/filesystem'
 
@@ -109,7 +110,7 @@ if (browser.windows) {
 export default class Panel extends React.Component {
   constructor(props) {
     super(props)
-    this.state = { project }
+    this.state = { project, user: null }
     this.parseKeyDown = this.parseKeyDown.bind(this)
     this.keyDownHandler = window.document.body.onkeydown = this.handleKeyDown.bind(
       this
@@ -272,6 +273,30 @@ export default class Panel extends React.Component {
     newProject.setModified(false)
     UiState.startRecording(false)
   }
+
+  handleLogin = () => {
+    fetch('https://superbot.cloud/login/cloud/credentials.json')
+    .then(res => {
+      console.log(res)
+      if(res.status === 200 && res.redirected === false){
+        return res.json()
+      } else if (res.status === 200 && res.redirected === true){
+        return Promise.reject('Login needed!')
+      } else {
+        return Promise.reject('Error fetching credentials!')
+      }
+    }).then(creds => {
+      console.log('login creds', creds)
+      this.setState({ user: creds })
+    }).catch(e => console.log(e))
+  }
+
+
+
+  componentWillMount(){
+    this.handleLogin()
+  }
+
   componentWillUnmount() {
     if (isProduction) {
       clearInterval(this.moveInterval)
@@ -305,7 +330,8 @@ export default class Panel extends React.Component {
                   this.openFile = openFile
                 }}
                 load={loadProject.bind(undefined, this.state.project)}
-                save={() => saveProject(this.state.project)}
+                //save={() => saveProject(this.state.project)}
+                save={() => console.log('save project')}
                 new={this.loadNewProject.bind(this)}
               />
               <div
@@ -313,6 +339,7 @@ export default class Panel extends React.Component {
                   dragging: UiState.navigationDragging,
                 })}
               >
+
                 <SplitPane
                   split="vertical"
                   minSize={UiState.minNavigationWidth}
@@ -333,6 +360,7 @@ export default class Panel extends React.Component {
                     callstackIndex={UiState.selectedTest.stack}
                   />
                 </SplitPane>
+
               </div>
             </div>
             <Console
