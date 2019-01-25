@@ -1,0 +1,43 @@
+.login-form {
+  font-size: 26px;
+  text-align: center;
+  margin: 50px auto;
+  width: 480px;
+}
+
+.login-form > img {
+  float: left;
+  margin-left: 5px;
+  width: 50px;
+}
+
+.login-form > a > button {
+  font-size: 20px;
+  color: #ffffff;
+  background-color: #5f9cce;
+  padding: 5px 14px 5px 14px;
+  margin-top: 10px;
+  border-radius: 3px;
+  border-style: none;
+}
+
+.login-form > a > button:active {
+  outline: none;
+}
+
+.login-form > p {
+  font-size: 16px;
+  color: #505050;
+}
+
+.login-form > p > a {
+  color: steelblue;
+  margin-left: 5px;
+}
+
+.login-form > h2 {
+  float: right;
+  margin-top: 12px;
+  margin-right: 60px;
+  margin-bottom: 10px;
+}
