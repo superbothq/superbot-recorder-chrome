@@ -223,7 +223,7 @@ class ModalState {
 
   @action.bound
   renameProject() {
-    return this.rename(Types.project, this._project.name)
+    return this.rename(Types.project, '')
   }
 
   @action.bound
