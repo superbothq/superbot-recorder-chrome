@@ -271,7 +271,7 @@ export default class Panel extends React.Component {
     loadJSProject(this.state.project, newProject.toJS())
     Logger.clearLogs()
     newProject.setModified(false)
-    UiState.startRecording(false)
+    //UiState.startRecording(false)
   }
 
   handleLogin = () => {
@@ -287,7 +287,10 @@ export default class Panel extends React.Component {
       }
     }).then(creds => {
       console.log('login creds', creds)
-      this.setState({ user: creds })
+      this.setState({ user: creds }, () => {
+        console.log('this.state', this.state)
+        this.loadNewProject()
+      })
     }).catch(e => console.log(e))
   }
 
@@ -312,7 +315,7 @@ export default class Panel extends React.Component {
     }
 
     for(let i = 0; i < suite.files.length; i++){
-      formData.append('files[]', new Blob([JSON.stringify(suite.files[i].content)]), UiState.selectedTest.test.name)
+      formData.append('files[]', new Blob([JSON.stringify(suite.files[i].content)]), this.state.project.name)
     }
 
     fetch('https://superbot.cloud/api/v1/tests', {
@@ -329,13 +332,21 @@ export default class Panel extends React.Component {
       }
     }).then(() => {
       UiState.saved()
-      alert('"save notification here"')
+      alert('Test saved')
     })
     .catch(e => console.log(e))
   }
 
   componentWillMount(){
     this.handleLogin()
+    /*
+    window.addEventListener('keypress', (event) => {
+      console.log('keypress event', event)
+      if(event.key === '§'){
+        this.setState({ activeView: this.state.activeView === 'simple' ? 'advanced' : 'simple' })
+      }
+    })
+    */
   }
 
   componentWillUnmount() {
@@ -346,6 +357,8 @@ export default class Panel extends React.Component {
     }
   }
   render() {
+    console.log('selected test', UiState.selectedTest)
+    console.log('displayed test', UiState.displayedTest)
     if(this.state.user === null){
       return (
         <LoginPage
@@ -381,32 +394,13 @@ export default class Panel extends React.Component {
                 //save={() => saveProject(this.state.project)}
                 save={this.uploadTest}
                 new={this.loadNewProject.bind(this)}
+                clearAllCommands={UiState.displayedTest.clearAllCommands}
               />
-              <div
-                className={classNames('content', {
-                  dragging: UiState.navigationDragging,
-                })}
-              >
-              <Editor
-                url={this.state.project.url}
-                urls={this.state.project.urls}
-                setUrl={this.state.project.setUrl}
-                test={UiState.displayedTest}
-                callstackIndex={UiState.selectedTest.stack}
-              />
-              {/*
-                <SplitPane
-                  split="vertical"
-                  minSize={UiState.minNavigationWidth}
-                  maxSize={UiState.maxNavigationWidth}
-                  size={UiState.navigationWidth}
-                  onChange={UiState.resizeNavigation}
+                <div
+                  className={classNames('content', {
+                    dragging: UiState.navigationDragging,
+                  })}
                 >
-                  <Navigation
-                    tests={UiState.filteredTests}
-                    suites={this.state.project.suites}
-                    duplicateTest={this.state.project.duplicateTestCase}
-                  />
                   <Editor
                     url={this.state.project.url}
                     urls={this.state.project.urls}
@@ -414,9 +408,29 @@ export default class Panel extends React.Component {
                     test={UiState.displayedTest}
                     callstackIndex={UiState.selectedTest.stack}
                   />
-                </SplitPane>
-              */}
-              </div>
+                  {/*
+                    <SplitPane
+                      split="vertical"
+                      minSize={UiState.minNavigationWidth}
+                      maxSize={UiState.maxNavigationWidth}
+                      size={UiState.navigationWidth}
+                      onChange={UiState.resizeNavigation}
+                    >
+                      <Navigation
+                        tests={UiState.filteredTests}
+                        suites={this.state.project.suites}
+                        duplicateTest={this.state.project.duplicateTestCase}
+                      />
+                      <Editor
+                        url={this.state.project.url}
+                        urls={this.state.project.urls}
+                        setUrl={this.state.project.setUrl}
+                        test={UiState.displayedTest}
+                        callstackIndex={UiState.selectedTest.stack}
+                      />
+                    </SplitPane>
+                  */}
+                </div>
             </div>
             <Console
               height={UiState.consoleHeight}
