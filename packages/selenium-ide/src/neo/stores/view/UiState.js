@@ -346,7 +346,7 @@ class UiState {
       })
     }
   }
-
+  
   async nameNewTest(isEnabled = true) {
     const test = this.selectedTest.test
     if (isEnabled && test.name === 'Untitled' && !test.nameDialogShown) {

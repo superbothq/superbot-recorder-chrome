@@ -91,7 +91,7 @@ export default class Modal extends Component {
           onUrlSelection={ModalState.baseUrlState.done}
           cancel={ModalState.baseUrlState.cancel}
         />
-        {isProduction ? (
+        {/*isProduction ? (
           <WelcomeDialog
             isWelcomed={ModalState.welcomeState.started}
             project={this.props.project}
@@ -99,7 +99,7 @@ export default class Modal extends Component {
             hideWelcome={ModalState.hideWelcome}
             completeWelcome={ModalState.completeWelcome}
           />
-        ) : null}
+        ) : null
         <NewWindowConfigurationDialog
           isOpen={ModalState.newWindowConfigurationState}
           cancel={ModalState.toggleNewWindowConfiguration}
@@ -109,6 +109,7 @@ export default class Modal extends Component {
           command={UiState.selectedCommand || {}}
           isUniqueWindowName={ModalState.isUniqueWindowName}
         />
+        */}
       </div>
     )
   }

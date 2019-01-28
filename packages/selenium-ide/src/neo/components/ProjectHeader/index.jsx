@@ -76,6 +76,7 @@ export default class ProjectHeader extends React.Component {
   }
   handleChange(e) {
     this.props.changeName(e.target.value)
+    UiState.selectedTest.test.name = e.target.value
   }
   render() {
     return (
@@ -156,6 +157,7 @@ export default class ProjectHeader extends React.Component {
             }}
           />
           <Clear
+            data-tip='<p>Clear commands</p>'
             onClick={this.props.clearAllCommands}
             style={{
               margin: '0 2px 0 3px'
