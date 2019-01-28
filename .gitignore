@@ -21,3 +21,7 @@ website/i18n
 # auto-generated docs
 docs/api/arguments.md
 docs/api/commands.md
+packages/selenium-ide/key.pem
+packages/selenium-ide/build.crx
+packages/selenium-ide/src/neo/containers/SimpleView/style.css
+packages/selenium-ide/src/neo/containers/SimpleView/index.jsx
