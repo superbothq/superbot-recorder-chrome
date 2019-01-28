@@ -82,12 +82,14 @@ export default class Editor extends React.Component {
   render() {
     return (
       <main className="editor" onKeyDown={this.handleKeyDown.bind(this)}>
+        {/*
         <ToolBar />
         <UrlBar
           url={this.props.url}
           urls={this.props.urls}
           setUrl={this.props.setUrl}
         />
+        */}
         <TestTable
           commands={this.props.test ? this.props.test.commands : null}
           callstackIndex={this.props.callstackIndex}
