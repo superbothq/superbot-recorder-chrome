@@ -21,12 +21,20 @@ import classNames from 'classnames'
 import Title from 'react-document-title'
 import ContentEditable from 'react-contenteditable'
 import { observer } from 'mobx-react'
+import PlaybackState from '../../stores/view/PlaybackState'
+import UiState from '../../stores/view/UiState'
 import NewButton from '../ActionButtons/New'
-import OpenButton from '../ActionButtons/Open'
+//import OpenButton from '../ActionButtons/Open'
 import SaveButton from '../ActionButtons/Save'
-import MoreButton from '../ActionButtons/More'
-import ListMenu, { ListMenuItem } from '../ListMenu'
-import { showChangelog } from '../Changelog'
+//import MoreButton from '../ActionButtons/More'
+//import ListMenu, { ListMenuItem } from '../ListMenu'
+//import { showChangelog } from '../Changelog'
+import GaugeMenu from '../GaugeMenu'
+import SpeedGauge from '../ActionButtons/SpeedGauge'
+import PlayCurrent from '../ActionButtons/PlayCurrent'
+import Record from '../ActionButtons/Record'
+import Clear from '../ActionButtons/Clear'
+
 import './style.css'
 
 @observer
@@ -45,6 +53,21 @@ export default class ProjectHeader extends React.Component {
     save: PropTypes.func,
     new: PropTypes.func,
   }
+  playAll() {
+    const isInSuiteView = UiState.selectedView === 'Test suites'
+
+    if (PlaybackState.canPlaySuite) {
+      PlaybackState.playSuiteOrResume()
+    } else if (isInSuiteView) {
+      ModalState.showAlert({
+        title: 'Select a test case',
+        description:
+          'To play a suite you must select a test case from within that suite.',
+      })
+    } else {
+      PlaybackState.playFilteredTestsOrResume()
+    }
+  }
   handleKeyDown(e) {
     if (e.key === 'Enter') {
       e.preventDefault()
@@ -58,12 +81,12 @@ export default class ProjectHeader extends React.Component {
     return (
       <div className={classNames('header', { changed: this.props.changed })}>
         <Title
-          title={`Selenium IDE ${this.props.title === '' ? '' : '-'} ${
+          title={`Superbot Recorder ${this.props.title === '' ? '' : '-'} ${
             this.props.title
           }${this.props.changed ? '*' : ''}`}
         />
         <div>
-          <span className="title-prefix">Project: </span>
+          <span className="title-prefix">Test: </span>
           <ContentEditable
             className="title"
             onKeyDown={this.handleKeyDown}
@@ -73,29 +96,101 @@ export default class ProjectHeader extends React.Component {
           <i className="si-pencil" />
         </div>
         <span className="buttons">
-          <NewButton onClick={this.props.new} />
-          <OpenButton
-            onFileSelected={this.props.load}
-            openFile={this.props.openFile}
+          <Record
+            disabled={PlaybackState.isPlaying || !UiState.selectedTest.test}
+            isRecording={UiState.isRecording}
+            onClick={UiState.toggleRecord}
+            style={{
+              padding: 0,
+              margin: 0,
+              width: 'initial',
+              height: 'initial'
+            }}
+          />
+          <div
+            className='button-separator'
+            style={{
+              borderLeft: '1px solid #ccc',
+              padding: '10px 0 10px 0',
+              margin: '0 7px 0 10px',
+              width: 'initial',
+              height: 'initial'
+            }}
+          />
+          <PlayCurrent
+            isActive={!PlaybackState.paused && PlaybackState.isPlayingTest}
+            disabled={UiState.isRecording}
+            onClick={this.playAll}
+            style={{
+              fontSize: 26,
+              border: 0,
+              margin: '0 5px 0 5px',
+              width: 'initial',
+              height: 'initial'
+            }}
+          />
+          <GaugeMenu
+            opener={<SpeedGauge
+                      speed={UiState.gaugeSpeed}
+                      style={{
+                        fontSize: 26,
+                        padding: 0,
+                        border: 0,
+                        margin: '0 10px 0 0',
+                        width: 'initial',
+                        height: 'initial'
+                      }}
+                    />}
+            value={PlaybackState.delay}
+            maxDelay={PlaybackState.maxDelay}
+            onChange={PlaybackState.setDelay}
+          />
+          <div
+            className='button-separator'
+            style={{
+              borderLeft: '1px solid #ccc',
+              padding: '10px 0 10px 0',
+              margin: '0 7px 0 10px',
+              width: 'initial',
+              height: 'initial'
+            }}
+          />
+          <Clear
+            onClick={this.props.clearAllCommands}
+            style={{
+              margin: '0 2px 0 3px'
+            }}
+          />
+          <div
+            className='button-separator'
+            style={{
+              borderLeft: '1px solid #ccc',
+              padding: '10px 0 10px 0',
+              margin: '0 7px 0 10px',
+              width: 'initial',
+              height: 'initial'
+            }}
+          />
+          <NewButton
+            onClick={this.props.new}
+            style={{
+              border: 0,
+              margin: '0 0 0 10px',
+              width: 'initial',
+              height: 'initial'
+            }}
           />
           <SaveButton
-            data-place="left"
             unsaved={this.props.changed}
             onClick={this.props.save}
+            style={{
+              fontSize: 24,
+              border: 0,
+              margin: '0 0 0 10px',
+              width: 'initial',
+              height: 'initial'
+            }}
           />
-          <ListMenu
-            width={250}
-            padding={-5}
-            opener={<MoreButton canFocus={true} />}
-          >
-            <ListMenuItem href="https://www.seleniumhq.org/selenium-ide/docs/en/introduction/command-line-runner/">
-              {'Running in CI'}
-            </ListMenuItem>
-            <ListMenuItem onClick={showChangelog}>{"What's new"}</ListMenuItem>
-            <ListMenuItem href="https://www.seleniumhq.org/selenium-ide/docs/en/introduction/getting-started/">
-              {'Help'}
-            </ListMenuItem>
-          </ListMenu>
         </span>
       </div>
     )
