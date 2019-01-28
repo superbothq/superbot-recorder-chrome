@@ -2,7 +2,7 @@ var handleMessage = (function() {
   var content = document.getElementById('content')
   var lastTimeoutHandle = 0
   function resetContent() {
-    content.innerText = 'Selenium IDE is recording...'
+    content.innerText = 'Superbot IDE is recording...'
     content.style.color = '#E80600'
     content.style.animation = 'fadeIn 1s infinite alternate'
   }
