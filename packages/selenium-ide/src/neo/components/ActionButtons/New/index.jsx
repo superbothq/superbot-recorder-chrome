@@ -25,10 +25,8 @@ export default class NewButton extends React.Component {
     const props = { ...this.props }
     return (
       <ActionButton
-        data-tip={`<p>Create new project <span style="color: #929292;padding-left: 5px;">${parse(
-          'n',
-          { primaryKey: true, shiftKey: true }
-        )}</span></p>`}
+        data-place='left'
+        data-tip={'<p>Create test</p>'}
         {...props}
         className={classNames('si-new-project', this.props.className)}
       /> // eslint-disable-line react/prop-types

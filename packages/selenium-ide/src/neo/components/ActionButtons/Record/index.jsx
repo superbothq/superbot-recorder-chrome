@@ -31,17 +31,8 @@ export default class Record extends React.Component {
     return (
       <div
         className="record"
-        data-tip={
-          this.props.isRecording
-            ? `<p>Stop recording <span style="color: #929292;padding-left: 5px;">${parse(
-                'u',
-                { primaryKey: true }
-              )}</span></p>`
-            : `<p>Start recording <span style="color: #929292;padding-left: 5px;">${parse(
-                'u',
-                { primaryKey: true }
-              )}</span></p>`
-        }
+        data-place='left'
+        data-tip={'<p>Record test</p>'}
       >
         <ActionButton
           disabled={this.props.disabled}
