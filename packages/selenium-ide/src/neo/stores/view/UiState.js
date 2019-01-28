@@ -321,24 +321,19 @@ class UiState {
   }
 
   @action.bound
-  async toggleRecord(isInvalid) {
+  async toggleRecord() {
     await (this.isRecording
       ? this.stopRecording()
-      : this.startRecording(isInvalid))
+      : this.startRecording())
   }
 
   @action.bound
   beforeRecording() {}
 
   @action.bound
-  async startRecording(isInvalid) {
-    let startingUrl = this.baseUrl
-    if (!startingUrl) {
-      startingUrl = await ModalState.selectBaseUrl({
-        isInvalid,
-        confirmLabel: 'Start recording',
-      })
-    }
+  async startRecording() {
+    const startingUrl = 'about:blank'
+    console.log('selected test', this.selectedTest)
     try {
       await this.recorder.attach(startingUrl)
       this._setRecordingState(true)
@@ -352,12 +347,11 @@ class UiState {
     }
   }
 
-  nameNewTest(isEnabled = true) {
+  async nameNewTest(isEnabled = true) {
     const test = this.selectedTest.test
     if (isEnabled && test.name === 'Untitled' && !test.nameDialogShown) {
-      ModalState.renameTest(test.name, { isNewTest: true }).then(name => {
-        test.setName(name)
-      })
+      const name = await ModalState.renameTest(test.name, { isNewTest: true })
+      test.setName(name)
       test.nameDialogShown = true
     }
   }
@@ -367,7 +361,7 @@ class UiState {
     await this.recorder.detach()
     this._setRecordingState(false)
     await this.emitRecordingState()
-    await this.nameNewTest(opts.nameNewTest)
+    //await this.nameNewTest(opts.nameNewTest)
   }
 
   // Do not call this method directly, use start and stop
