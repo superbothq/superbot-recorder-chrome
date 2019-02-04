@@ -57,6 +57,9 @@ export default class TabBar extends React.Component {
     }
     if (this.props.tabClicked) this.props.tabClicked(tab)
   }
+  changeTab(tab){
+    this.props.tabChanged(tab)
+  }
   render() {
     return (
       <div className="tabbar">
@@ -66,6 +69,7 @@ export default class TabBar extends React.Component {
               key={tab.name}
               style={{
                 width: `${this.props.tabWidth}px`,
+                borderBottom: this.props.selectedTab === tab.name ? '2px solid #40a6ff' : null
               }}
             >
               <a
@@ -73,7 +77,7 @@ export default class TabBar extends React.Component {
                   unread: tab.unread,
                 })}
                 href="#"
-                onClick={this.handleClick.bind(this, tab.name, index)}
+                onClick={() => this.changeTab(tab.name)}
               >
                 {tab.name}
               </a>
@@ -90,14 +94,6 @@ export default class TabBar extends React.Component {
             </li>
           ) : null}
         </ul>
-        <div
-          className="underline"
-          style={{
-            transform: `translateX(${this.state.activeTab.index *
-              this.props.tabWidth}px)`,
-            width: `${this.props.tabWidth}px`,
-          }}
-        />
       </div>
     )
   }

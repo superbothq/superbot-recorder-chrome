@@ -267,7 +267,7 @@ export default class Panel extends React.Component {
   async createNewProject() {
     const name = await ModalState.renameProject()
     const newProject = observable(new ProjectStore(name))
-    createDefaultSuite(newProject)
+    createDefaultSuite(newProject, { suite: 'Default Suite', test: name })
     loadJSProject(this.state.project, newProject.toJS())
     Logger.clearLogs()
     newProject.setModified(false)
@@ -371,72 +371,31 @@ export default class Panel extends React.Component {
         <SuiteDropzone
           loadProject={loadProject.bind(undefined, this.state.project)}
         >
-          <SplitPane
-            split="horizontal"
-            minSize={UiState.minContentHeight}
-            maxSize={UiState.maxContentHeight}
-            size={UiState.windowHeight - UiState.consoleHeight}
-            onChange={size => UiState.resizeConsole(window.innerHeight - size)}
-            style={{
-              position: 'initial',
-            }}
-          >
-            <div className="wrapper">
-              <PauseBanner />
-              <ProjectHeader
-                title={this.state.project.name}
-                changed={this.state.project.modified}
-                changeName={this.state.project.changeName}
-                openFile={openFile => {
-                  this.openFile = openFile
-                }}
-                load={loadProject.bind(undefined, this.state.project)}
-                //save={() => saveProject(this.state.project)}
-                save={this.uploadTest}
-                new={this.loadNewProject.bind(this)}
-                clearAllCommands={UiState.displayedTest.clearAllCommands}
-              />
-                <div
-                  className={classNames('content', {
-                    dragging: UiState.navigationDragging,
-                  })}
-                >
-                  <Editor
-                    url={this.state.project.url}
-                    urls={this.state.project.urls}
-                    setUrl={this.state.project.setUrl}
-                    test={UiState.displayedTest}
-                    callstackIndex={UiState.selectedTest.stack}
-                  />
-                  {/*
-                    <SplitPane
-                      split="vertical"
-                      minSize={UiState.minNavigationWidth}
-                      maxSize={UiState.maxNavigationWidth}
-                      size={UiState.navigationWidth}
-                      onChange={UiState.resizeNavigation}
-                    >
-                      <Navigation
-                        tests={UiState.filteredTests}
-                        suites={this.state.project.suites}
-                        duplicateTest={this.state.project.duplicateTestCase}
-                      />
-                      <Editor
-                        url={this.state.project.url}
-                        urls={this.state.project.urls}
-                        setUrl={this.state.project.setUrl}
-                        test={UiState.displayedTest}
-                        callstackIndex={UiState.selectedTest.stack}
-                      />
-                    </SplitPane>
-                  */}
-                </div>
-            </div>
-            <Console
-              height={UiState.consoleHeight}
-              restoreSize={UiState.restoreConsoleSize}
+          <div className="wrapper">
+            <PauseBanner />
+            <ProjectHeader
+              title={this.state.project.name}
+              changed={this.state.project.modified}
+              changeName={this.state.project.changeName}
+              openFile={openFile => {
+                this.openFile = openFile
+              }}
+              load={loadProject.bind(undefined, this.state.project)}
+              //save={() => saveProject(this.state.project)}
+              save={this.uploadTest}
+              new={this.loadNewProject.bind(this)}
+              clearAllCommands={UiState.displayedTest.clearAllCommands}
             />
-          </SplitPane>
+            <Console
+              url={this.state.project.url}
+              urls={this.state.project.urls}
+              setUrl={this.state.project.setUrl}
+              test={UiState.displayedTest}
+              callstackIndex={UiState.selectedTest.stack}
+              isRecording={UiState.isRecording}
+              isPlaying={PlaybackState.isPlaying}
+            />
+          </div>
           <Modal
             project={this.state.project}
             createNewProject={this.createNewProject.bind(this)}

@@ -146,21 +146,11 @@ export default class ProjectHeader extends React.Component {
             maxDelay={PlaybackState.maxDelay}
             onChange={PlaybackState.setDelay}
           />
-          <div
-            className='button-separator'
-            style={{
-              borderLeft: '1px solid #ccc',
-              padding: '10px 0 10px 0',
-              margin: '0 7px 0 10px',
-              width: 'initial',
-              height: 'initial'
-            }}
-          />
           <Clear
             data-tip='<p>Clear commands</p>'
             onClick={this.props.clearAllCommands}
             style={{
-              margin: '0 2px 0 3px'
+              margin: '0 2px 0 6px'
             }}
           />
           <div

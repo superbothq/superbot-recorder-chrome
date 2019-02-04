@@ -27,15 +27,25 @@ export default class LogList extends React.Component {
     this.props.scrollTo(10000)
   }
   render() {
-    return (
-      <div className="logs">
-        <ul>
-          {this.props.output.logs.map(log => (
-            <LogMessage key={log.id} log={log} />
-          ))}
-        </ul>
-      </div>
-    )
+    if(this.props.output.logs.length <= 0){
+      return (
+        <p style={{
+          margin: '10px 0 0 10px',
+          fontSize: 14,
+          textAlign: 'center'
+        }}>No logs yet...</p>
+      )
+    } else {
+      return (
+        <div className="logs">
+          <ul>
+            {this.props.output.logs.map(log => (
+              <LogMessage key={log.id} log={log} />
+            ))}
+          </ul>
+        </div>
+      )
+    }
   }
   static propTypes = {
     output: PropTypes.object,
