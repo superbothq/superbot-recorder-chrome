@@ -288,7 +288,6 @@ export default class Panel extends React.Component {
     }).then(creds => {
       console.log('login creds', creds)
       this.setState({ user: creds }, () => {
-        console.log('this.state', this.state)
         this.loadNewProject()
       })
     }).catch(e => console.log(e))

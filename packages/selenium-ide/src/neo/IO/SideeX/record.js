@@ -82,11 +82,9 @@ async function addInitialCommands(recordedUrl) {
     const url = new URL(recordedUrl ? recordedUrl : tab.url)
     if (!UiState.baseUrl) {
       UiState.setUrl(url.origin, true)
-      open.setTarget(`${url.pathname}${url.search}`)
-    } else if (url.origin === UiState.baseUrl) {
-      open.setTarget(`${url.pathname}${url.search}`)
+      open.setTarget(url.href)
     } else {
-      open.setTarget(recordedUrl)
+      open.setTarget(url.href)
     }
     setSize.setTarget(`${win.width}x${win.height}`)
     await notifyPluginsOfRecordedCommand(open, test)
