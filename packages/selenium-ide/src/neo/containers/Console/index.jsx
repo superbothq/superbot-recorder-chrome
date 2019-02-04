@@ -19,29 +19,29 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import TabBar from '../../components/TabBar'
 import LogList from '../../components/LogList'
-import ClearButton from '../../components/ActionButtons/Clear'
 import { output } from '../../stores/view/Logs'
 import PlaybackLogger from '../../side-effects/playback-logging'
 import './style.css'
-import CommandReference from '../../components/CommandReference'
-import UiState from '../../stores/view/UiState'
+//import CommandReference from '../../components/CommandReference'
+//import UiState from '../../stores/view/UiState'
 import { observer } from 'mobx-react'
 import { observe } from 'mobx'
-import { Commands } from '../../models/Command'
+//import { Commands } from '../../models/Command'
+import Editor from '../Editor';
+import ClearButton from '../../components/ActionButtons/Clear';
 
 @observer
 export default class Console extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      tab: 'Log',
+      tab: 'Recorded Steps',
       logsUnread: false,
     }
     this.playbackLogger = new PlaybackLogger()
     this.loggerDisposer = observe(output.logs, () => {
-      this.setState({ logsUnread: this.state.tab === 'Log' ? false : true })
+      this.setState({ logsUnread: this.state.tab === 'Playback Log' ? false : true })
     })
-    this.tabClicked = this.tabClicked.bind(this)
     this.tabChangedHandler = this.tabChangedHandler.bind(this)
     this.setViewportRef = element => {
       this.viewport = element
@@ -55,51 +55,61 @@ export default class Console extends React.Component {
   tabChangedHandler(tab) {
     this.setState({
       tab,
-      logsUnread: tab === 'Log' ? false : this.state.logsUnread,
+      logsUnread: tab === 'Playback Log' ? false : this.state.logsUnread,
     })
-  }
-  tabClicked() {
-    this.props.restoreSize()
   }
   scroll(to) {
     this.viewport.scrollTo(0, to)
   }
+  componentDidUpdate(prevProps, prevState){
+    if(prevProps.isRecording === false && this.props.isRecording === true){
+      this.tabChangedHandler('Recorded Steps')
+    }
+    if(prevProps.isPlaying === false && this.props.isPlaying === true){
+      this.tabChangedHandler('Playback Log')
+    }
+  }
   render() {
-    const command = UiState.selectedCommand
-      ? Commands.list.get(UiState.selectedCommand.command)
-      : undefined
     const tabs = [
-      { name: 'Log', unread: this.state.logsUnread },
-      { name: 'Reference', unread: false },
+      { name: 'Recorded Steps', unread: false },
+      { name: 'Playback Log', unread: this.state.logsUnread },
     ]
     return (
-      <footer
-        className="console"
-        style={{
-          height: this.props.height ? `${this.props.height}px` : 'initial',
-        }}
-      >
+      <div className="console">
         <TabBar
           tabs={tabs}
-          tabWidth={90}
+          tabWidth={115}
           buttonsMargin={0}
           tabChanged={this.tabChangedHandler}
+          selectedTab={this.state.tab}
         >
           <ClearButton onClick={output.clear} />
         </TabBar>
         <div className="viewport" ref={this.setViewportRef}>
-          {this.state.tab === 'Log' && (
+          {this.state.tab === 'Recorded Steps' && (
+            <Editor
+              url={this.props.url}
+              urls={this.props.urls}
+              setUrl={this.props.setUrl}
+              test={this.props.test}
+              callstackIndex={this.props.callstackIndex}
+            />
+          )}
+          {this.state.tab === 'Playback Log' && (
             <LogList output={output} scrollTo={this.scroll} />
           )}
-          {this.state.tab === 'Reference' && (
-            <CommandReference currentCommand={command} />
-          )}
         </div>
-      </footer>
+      </div>
     )
   }
-  static propTypes = {
-    height: PropTypes.number,
-    restoreSize: PropTypes.func,
-  }
+}
+
+Console.propTypes = {
+  url: PropTypes.string,
+  urls: PropTypes.array,
+  setUrl: PropTypes.func,
+  test: PropTypes.object,
+  callstackIndex: PropTypes.number,
+  isRecording: PropTypes.bool,
+  isPlaying: PropTypes.bool
 }
