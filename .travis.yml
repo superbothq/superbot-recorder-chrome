@@ -6,26 +6,28 @@ cache:
   directories:
     - .peru
 node_js:
-  - "10"
-  - "8"
-services:
-  - docker
+- "10"
 before_install:
   - curl -o- -L https://yarnpkg.com/install.sh | bash
   - export PATH="$HOME/.yarn/bin:$PATH"
   - pyenv install -s 3.6
   - pyenv shell 3.6
   - pip3 install peru
-  - peru sync
+  - peru sync --force
 install:
   - yarn --ignore-engines
   - yarn build:webdriver
   - yarn build:selianize
-  - yarn build:runner
-  - NODE_ENV="staging" yarn build:ext
-  - docker-compose up -d
+  - yarn build:ext:prod
 script:
-  - yarn lint
-  - yarn test
-  - yarn test:webdriver
-  - yarn test:runner --server http://localhost:4444/wd/hub --force
+  - cd packages/selenium-ide
+  - echo $keypem | base64 -d >> key.pem
+  - ./build.sh build/ key.pem
+deploy:
+  provider: releases
+  api_key:
+    secure: eyEVKFAdN/NwKUTz9bOqSCLj6lgv856P6h0xwNHVJE2U70+FVJUo26qML+Tb7FSBOZENj60ziz9OqNeUK76OuJh1wuW3Ay9yDTAanQIVWmRpJYfLZgYwwX7FvfxS9w+8YpnHDOYGImPMghIBBmkgnO+kPFqU8UiHhbrCk1lP2lZMLM40QTqbT3OCTri8yV7rl+nraHwCYjDsd0lw2yd84OZmq2cEE6PXgXDLtRrInI7x1d5yQ/KxnL0vQh5HdyQEugbf11WTldt2/ShtGXXpIlzPY+6YAe2G2SSr95paZz3ZYFLCjv0vFi/l1dRxsU/mQbz8hoo2EXHWsaFx9EMADVHCn5shpBsTDfVoP+3pSKwRgsNB6lxBHc2s2mzuAr0Fw76QjR+6xIO3uCx9zF4Kj+QuQlSph4LMaIWOBI8KiNxTpGRl7kiO000QUeG3wG4BEmy6fF7xc5Oooiaqpb1PeRoHLDIiU9zD07sc9FI0d0sGxQS7l24PHBeIXsTn2qwfOL7RV+GfXJB8qHeL4Mu7ULDFfDZKJLo0OSXJxaG/Qz5Phii4W8qmyF0ZL+3L3TNFMl18ZB3nOAzjXBdoKnFMlY5HTwyRBXbfAKVTBL/S6Zvf8HNcbe/k061/C+wCHpq69QcPLf+WxF2fiTDN9NER6kPCoEJRSeoEohHhU1vnbZs=
+  file: packages/selenium-ide/build.crx
+  on:
+    repo: superbothq/superbot-recorder-chrome
+    branch: superbot
