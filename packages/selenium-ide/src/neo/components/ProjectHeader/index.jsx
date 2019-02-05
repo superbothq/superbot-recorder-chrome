@@ -101,7 +101,7 @@ export default class ProjectHeader extends React.Component {
           <BetterRecord
             disabled={PlaybackState.isPlaying || !UiState.selectedTest.test}
             isRecording={UiState.isRecording}
-            onClick={UiState.toggleBetterRecord}
+            onClick={UiState.toggleSuperbotRecording}
           />
           <Record
             disabled={PlaybackState.isPlaying || !UiState.selectedTest.test}

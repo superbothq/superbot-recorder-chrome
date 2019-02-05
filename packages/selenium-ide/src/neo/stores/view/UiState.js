@@ -26,6 +26,8 @@ import Manager from '../../../plugin/manager'
 import WindowSession from '../../IO/window-session'
 import BackgroundRecorder from '../../IO/SideeX/recorder'
 
+import SuperbotRecorder from '../../IO/Superbot/recorder'
+
 class UiState {
   views = ['Tests', 'Test suites', 'Executing']
   @observable
@@ -97,6 +99,8 @@ class UiState {
     })
     this.recorder = new BackgroundRecorder(WindowSession)
     this.windowSession = WindowSession
+
+    this.superbotRecorder = new SuperbotRecorder()
   }
 
   @action.bound
@@ -328,6 +332,13 @@ class UiState {
   }
 
   @action.bound
+  async toggleSuperbotRecording() {
+    await (this.isRecording
+      ? this.stopSuperbotRecording()
+      : this.startSuperbotRecording())
+  }
+
+  @action.bound
   beforeRecording() {}
 
   @action.bound
@@ -339,6 +350,21 @@ class UiState {
       this._setRecordingState(true)
       this.lastRecordedCommand = null
       await this.emitRecordingState()
+    } catch (err) {
+      ModalState.showAlert({
+        title: 'Could not start recording',
+        description: err ? err.message : undefined,
+      })
+    }
+  }
+
+  @action.bound
+  async startSuperbotRecording() {
+    try {
+      //await this.recorder.attach(startingUrl)
+      this._setRecordingState(true)
+      this.lastRecordedCommand = null
+      await this.superbotRecorder.start()
     } catch (err) {
       ModalState.showAlert({
         title: 'Could not start recording',
@@ -362,6 +388,13 @@ class UiState {
     this._setRecordingState(false)
     await this.emitRecordingState()
     //await this.nameNewTest(opts.nameNewTest)
+  }
+
+  @action.bound
+  async stopSuperbotRecording() {
+    //await this.recorder.detach()
+    this._setRecordingState(false)
+    await this.emitRecordingState()
   }
 
   // Do not call this method directly, use start and stop
