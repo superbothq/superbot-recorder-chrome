@@ -33,6 +33,7 @@ import GaugeMenu from '../GaugeMenu'
 import SpeedGauge from '../ActionButtons/SpeedGauge'
 import PlayCurrent from '../ActionButtons/PlayCurrent'
 import Record from '../ActionButtons/Record'
+import BetterRecord from '../ActionButtons/BetterRecord'
 import Clear from '../ActionButtons/Clear'
 
 import './style.css'
@@ -97,6 +98,11 @@ export default class ProjectHeader extends React.Component {
           <i className="si-pencil" />
         </div>
         <span className="buttons">
+          <BetterRecord
+            disabled={PlaybackState.isPlaying || !UiState.selectedTest.test}
+            isRecording={UiState.isRecording}
+            onClick={UiState.toggleBetterRecord}
+          />
           <Record
             disabled={PlaybackState.isPlaying || !UiState.selectedTest.test}
             isRecording={UiState.isRecording}

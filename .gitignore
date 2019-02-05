@@ -25,3 +25,5 @@ packages/selenium-ide/key.pem
 packages/selenium-ide/build.crx
 packages/selenium-ide/src/neo/containers/SimpleView/style.css
 packages/selenium-ide/src/neo/containers/SimpleView/index.jsx
+packages/selenium-ide/robot_face.png
+packages/selenium-ide/robot_face.svg

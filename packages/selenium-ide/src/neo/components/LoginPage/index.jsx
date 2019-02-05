@@ -13,12 +13,10 @@ class LoginPage extends Component {
   render() {
     return (
       <div className='login-form'>
-        {/*
         <img
-          src='../robot_face.png'
+          src='../robot_face.svg'
           alt='robot_face'
         />
-        */}
         <h2>Superbot Recorder</h2>
         <br/>
 

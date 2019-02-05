@@ -9,6 +9,9 @@
   float: left;
   margin-left: 5px;
   width: 50px;
+  margin-top: 10px;
+  position: relative;
+  left: 25px;
 }
 
 .login-form > a > button {
@@ -40,4 +43,6 @@
   margin-top: 12px;
   margin-right: 60px;
   margin-bottom: 10px;
+  position: relative;
+  right: -30px;
 }
