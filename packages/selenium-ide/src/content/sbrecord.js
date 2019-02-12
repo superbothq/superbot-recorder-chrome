@@ -30,9 +30,26 @@ const recordCommand = (command, targets, value) => {
 }
 
 const attachEventHandlers = () => {
+  addEventHandler('keydown', (event) => {
+    if(event.target.tagName.toLowerCase() === 'input' && event.keyCode === 13){
+      if(event.target.value !== null && event.target.value !== ''){
+        recordCommand('type', locatorBuilder.buildAll(event.target), event.target.value)
+      }
+      
+      recordCommand('sendKeys', locatorBuilder.buildAll(event.target), '${KEY_ENTER}')
+    }
+  })
+
   for(let i = 0; i < EventHandlers.length; i++){
     window.addEventListener(EventHandlers[i].type, EventHandlers[i].handler, true)
   }
 }
 
 chrome.runtime.onMessage.addListener(attachRecorder)
+
+const debugChannel = (obj) => {
+  chrome.runtime.sendMessage({
+    type: 'debug',
+    obj: obj
+  })
+}

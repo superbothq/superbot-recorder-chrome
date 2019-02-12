@@ -32,7 +32,7 @@ export default class Record extends React.Component {
       <div
         className="record"
         data-place='left'
-        data-tip={'<p>Record test</p>'}
+        data-tip={'<p>Record a test</p>'}
       >
         <ActionButton
           disabled={this.props.disabled}
