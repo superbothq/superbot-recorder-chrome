@@ -17,7 +17,7 @@
       "32": "icons/icon_menu32.png",
       "64": "icons/icon_menu64.png"
     },
-    "default_title": "Selenium IDE"
+    "default_title": "Superbot Recorder"
   },
   "permissions": [
     "tabs",
@@ -57,7 +57,8 @@
         "assets/polyfills.js",
         "assets/escape.js",
         "assets/playback.js",
-        "assets/record.js"
+        "assets/record.js",
+        "assets/sbrecord.js"
       ],
       "match_about_blank": true,
       "all_frames": true

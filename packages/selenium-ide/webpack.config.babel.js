@@ -33,6 +33,7 @@ export default {
     playback: ['./content/commands-api'],
     background: ['./background/background'],
     record: ['./content/record'],
+		sbrecord: ['./content/sbrecord.js'],
     escape: ['./content/escape'],
     neo: ['react-hot-loader/patch', './neo/containers/Root'],
   },
