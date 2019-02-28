@@ -145,10 +145,6 @@ export default class SuperbotRecorder {
           chrome.debugger.attach(this.debugTarget, '1.3', () => {
             if(chrome.runtime.lastError !== undefined){
               console.log('debugger attach error:', chrome.runtime.lastError)
-            } else {
-              chrome.debugger.sendCommand(this.debugTarget, 'Overlay.setInspectMode', elemHighlight)
-              chrome.debugger.sendCommand(this.debugTarget, 'Overlay.enable')
-              chrome.debugger.sendCommand(this.debugTarget, 'Runtime.enable')
             }
           })
         }
@@ -182,6 +178,9 @@ export default class SuperbotRecorder {
       this.scripts = []
       const script1 = this.compileScript(cssPathBuilder, 'cssPathBuilder')
       const script2 = this.compileScript(nodeResolver, 'nodeResolver')
+      chrome.debugger.sendCommand(this.debugTarget, 'Overlay.setInspectMode', elemHighlight)
+      chrome.debugger.sendCommand(this.debugTarget, 'Overlay.enable')
+      chrome.debugger.sendCommand(this.debugTarget, 'Runtime.enable')
       Promise.all([script1, script2]).then(() => {
         for(let i = 0; i < this.scripts.length; i++){
           console.log('Script executed:', this.scripts[i].scriptName);
