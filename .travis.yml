@@ -20,8 +20,8 @@ install:
   - yarn build:selianize
   - yarn build:ext:prod
 script:
+  - echo $keypem | base64 -d > packages/selenium-ide/key.pem
   - cd packages/selenium-ide
-  - echo $keypem | base64 -d >> key.pem
   - ./build.sh build/ key.pem
 deploy:
   provider: releases

@@ -45,6 +45,8 @@ class UiState {
   @observable
   isRecording = false
   @observable
+  isSuperbotRecording = false
+  @observable
   lastRecordedCommand = null
   @observable
   isSelectingTarget = false
@@ -333,7 +335,7 @@ class UiState {
 
   @action.bound
   async toggleSuperbotRecording() {
-    await (this.isRecording
+    await (this.isSuperbotRecording
       ? this.stopSuperbotRecording()
       : this.startSuperbotRecording())
   }
@@ -362,7 +364,7 @@ class UiState {
   async startSuperbotRecording() {
     try {
       //await this.recorder.attach(startingUrl)
-      this._setRecordingState(true)
+      this._setSuperbotRecordingState(true)
       this.lastRecordedCommand = null
       await this.superbotRecorder.start()
     } catch (err) {
@@ -393,7 +395,7 @@ class UiState {
   @action.bound
   async stopSuperbotRecording() {
     //await this.recorder.detach()
-    this._setRecordingState(false)
+    this._setSuperbotRecordingState(false)
     await this.emitRecordingState()
   }
 
@@ -401,6 +403,11 @@ class UiState {
   @action.bound
   _setRecordingState(isRecording) {
     this.isRecording = isRecording
+  }
+
+  @action.bound
+  _setSuperbotRecordingState(isRecording) {
+    this.isSuperbotRecording = isRecording
   }
 
   @action.bound

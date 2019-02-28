@@ -1,10 +1,10 @@
 export const elemHighlight = {
   "mode": "searchForNode",
   "highlightConfig": {
-    "showInfo": true,
+    "showInfo": false,
     "showRulers": false,
     "showExtensionLines": false,
-    "displayAsMaterial": true,
+    "displayAsMaterial": false,
     "contentColor": {
       "r": 300,
       "g": 200,
