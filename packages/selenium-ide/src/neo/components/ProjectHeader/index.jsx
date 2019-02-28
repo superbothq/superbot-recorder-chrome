@@ -100,7 +100,7 @@ export default class ProjectHeader extends React.Component {
         <span className="buttons">
           <BetterRecord
             disabled={PlaybackState.isPlaying || !UiState.selectedTest.test}
-            isRecording={UiState.isRecording}
+            isRecording={UiState.isSuperbotRecording}
             onClick={UiState.toggleSuperbotRecording}
           />
           <Record

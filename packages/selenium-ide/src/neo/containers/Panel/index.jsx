@@ -336,7 +336,7 @@ export default class Panel extends React.Component {
     .catch(e => console.log(e))
   }
 
-  componentWillMount(){
+  componentDidMount(){
     this.handleLogin()
     /*
     window.addEventListener('keypress', (event) => {
