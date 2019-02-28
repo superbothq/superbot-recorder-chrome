@@ -3,31 +3,48 @@ import { Commands, ArgTypes } from '../../models/Command'
 import { elemHighlight } from './elementHighlight'
 
 const cssPathBuilder = `
-var cssPathBuilder = function (el) {
-  if (!(el instanceof Element) || el === null || el === undefined){
-    return;
-  }
-  var path = [];
-  while (el.nodeType === Node.ELEMENT_NODE) {
-    var selector = el.nodeName.toLowerCase();
-    if (el.id) {
-      selector += '#' + el.id;
-      path.unshift(selector);
-      break;
-    } else {
-      var sib = el, nth = 1;
-      while (sib = sib.previousElementSibling) {
-        if (sib.nodeName.toLowerCase() == selector)
-          nth++;
-      }
-      if (nth != 1)
-        selector += ":nth-of-type(" + nth + ")";
+  const cssPathBuilder = (el) => {
+    if (!(el instanceof Element)){
+      return;
     }
-    path.unshift(selector);
-    el = el.parentNode;
+    const path = [];
+    while (el !== null && el.nodeType === Node.ELEMENT_NODE) {
+      let selector = el.nodeName.toLowerCase();
+      if (el.id) {
+        selector += '#' + el.id;
+        path.unshift(selector);
+        break;
+      } else {
+        let sib = el, nth = 1;
+        while (sib = sib.previousElementSibling) {
+          if (sib.nodeName.toLowerCase() == selector)
+            nth++;
+        }
+        if (nth != 1)
+          selector += ":nth-of-type(" + nth + ")";
+      }
+      path.unshift(selector);
+      el = el.parentNode;
+    }
+    return path.join(" > ");
   }
-  return path.join(" > ");
-}`
+`
+
+const nodeResolver = `
+  const nodeResolver = (el) => {
+    //return first matching targeted element
+    if(typeof el.click === 'function'){
+      return el
+    } else {
+      //return first matching parent element
+      let pNode = el.parentNode
+      while(typeof pNode.click !== 'function'){
+        pNode = pNode.parentNode
+      }
+      return pNode
+    }
+  }
+`
 
 export default class SuperbotRecorder {
   constructor(){
@@ -35,10 +52,9 @@ export default class SuperbotRecorder {
     this.debugTarget = null
     this.recordOpenStep = true
     this.stateChecksInterval = null
+    this.scripts = []
 
-    chrome.runtime.onMessage.addListener(this.debugMessageHandler)
-    chrome.runtime.onMessage.addListener(this.commandMessageHandler)
-    chrome.tabs.onUpdated.addListener(this.tabsOnUpdatedHandler)
+    chrome.runtime.onMessage.addListener(this.messageHandler)
     chrome.debugger.onEvent.addListener(this.debuggerCommandHandler)
     chrome.webNavigation.onBeforeNavigate.addListener(this.navigationHandler)
   }
@@ -66,7 +82,7 @@ export default class SuperbotRecorder {
   stateChecks = () => {
     try {
       this.stateChecksInterval = setInterval(() => {
-        if(UiState.isRecording === false){
+        if(UiState.isSuperbotRecording === false){
           this.stopRecording()
           return
         }
@@ -75,10 +91,9 @@ export default class SuperbotRecorder {
             this.currentWindow = null
             this.stopRecording()
             UiState.toggleSuperbotRecording()
-            return
           }
         })
-      }, 333)
+      }, 250)
     } catch(e) {
       console.log('stateChecks error:', e)
     }
@@ -108,6 +123,8 @@ export default class SuperbotRecorder {
           this.removeRecordingWindow()
           this.currentWindow = null
         }
+        if(chrome.runtime.lastError !== undefined)
+          console.log('runtime.lastError:', chrome.runtime.lastError)
       })
       this.debugTarget = null
     } catch(e) {
@@ -125,7 +142,15 @@ export default class SuperbotRecorder {
         }
 
         if(!newTarget.attached){
-          chrome.debugger.attach(this.debugTarget, '1.3')
+          chrome.debugger.attach(this.debugTarget, '1.3', () => {
+            if(chrome.runtime.lastError !== undefined){
+              console.log('debugger attach error:', chrome.runtime.lastError)
+            } else {
+              chrome.debugger.sendCommand(this.debugTarget, 'Overlay.setInspectMode', elemHighlight)
+              chrome.debugger.sendCommand(this.debugTarget, 'Overlay.enable')
+              chrome.debugger.sendCommand(this.debugTarget, 'Runtime.enable')
+            }
+          })
         }
       })
     } catch(e) {
@@ -147,14 +172,35 @@ export default class SuperbotRecorder {
     return newCommand
   }
 
-  commandMessageHandler = (message, sender, sendResponse) => {
-    if(!message.command || sender.tab.id !== this.currentWindow.tabs[0].id){
+  messageHandler = async (message, sender, sendResponse) => {
+    if(sender.tab.id !== this.currentWindow.tabs[0].id) return;
+
+    console.log('New message:', message)
+    if(message.type === 'command'){
+      this.commandHandler(message.command, message.targets, message.value);      
+    } else if(message.type === 'exec'){
+      this.scripts = []
+      const script1 = this.compileScript(cssPathBuilder, 'cssPathBuilder')
+      const script2 = this.compileScript(nodeResolver, 'nodeResolver')
+      Promise.all([script1, script2]).then(() => {
+        for(let i = 0; i < this.scripts.length; i++){
+          console.log('Script executed:', this.scripts[i].scriptName);
+          this.runScript(this.scripts[i].scriptId)
+        }
+        chrome.tabs.sendMessage(this.currentWindow.tabs[0].id, { type: 'attachSuperbotRecorder' })
+      })
+    }
+  }
+
+  //handle recorded commands that are sent from content scripts
+  commandHandler = (command, targets, value) => {
+    console.log('Command recorded:', command, targets, value)
+
+    //prevent recoding commands before open-step is recorded
+    if(UiState.displayedTest.commands.length === 0){
       return
     }
 
-    console.log('Command recorded:', message)
-    
-    const { command, targets, value } = message
     const newCommand = this.recordCommand(command, targets, value)
     if (Commands.list.has(command)) {
       const type = Commands.list.get(command).target
@@ -166,41 +212,111 @@ export default class SuperbotRecorder {
     sendResponse(true)
   }
 
-  debuggerCommandHandler = (sender, method, params) => {
-    if(method === 'Overlay.inspectNodeRequested'){
-      chrome.debugger.sendCommand(this.debugTarget, 'DOM.getBoxModel', { backendNodeId: params.backendNodeId }, (boxModelData) => {
-        const dimensions = {
-          x: boxModelData.model.content[0],
-          y: boxModelData.model.content[1],
+  compileScript = (script, name) => {
+    return new Promise(resolve => {
+      chrome.debugger.sendCommand(this.debugTarget, 'Runtime.compileScript', {
+        expression: script,
+        sourceURL: name,
+        persistScript: true
+      }, res => {
+        const found = this.scripts.find(s => s.scriptId === res.scriptId)
+        if(res !== undefined && found === undefined){
+          this.scripts.push({ scriptName: name, scriptId: res.scriptId })          
         }
-
-        chrome.debugger.sendCommand(this.debugTarget, 'Runtime.evaluate', { expression: cssPathBuilder, includeCommandLineAPI: true})
-  
-        const getCSSPathAndClickElem = `
-          window.currentElem = document.elementFromPoint(${dimensions.x}, ${dimensions.y});
-          window.currentSelector = cssPathBuilder(window.currentElem);
-          window.currentElem.click();
-          window.currentElem = null;
-          window.currentSelector;`
-        chrome.debugger.sendCommand(this.debugTarget, 'Runtime.evaluate', { expression: getCSSPathAndClickElem, includeCommandLineAPI: true }, (selector) => {
-          this.recordCommand('click', [['css=' + selector.result.value]], '')
-        })
+        resolve()
       })
-    }
+    })
   }
 
-  tabsOnUpdatedHandler = (tabId, changeInfo, tab) => {
-    if(this.currentWindow === null || this.debugTarget === null){
-      return
-    }
-    if(tabId === this.currentWindow.tabs[0].id && changeInfo.status === 'complete'){
-      try {
+  runScript = (scriptId) => {
+    chrome.debugger.sendCommand(this.debugTarget, 'Runtime.runScript', { scriptId: scriptId });
+  }
+
+  getElementAction = () => {
+    return new Promise(resolve => {
+      chrome.debugger.sendCommand(this.debugTarget, 'Overlay.disable')
+      chrome.tabs.sendMessage(this.currentWindow.tabs[0].id, { type: 'showActionPalette' }, res => {
+        console.log('getElementAction res:', res)
         chrome.debugger.sendCommand(this.debugTarget, 'Overlay.setInspectMode', elemHighlight)
         chrome.debugger.sendCommand(this.debugTarget, 'Overlay.enable')
-        chrome.tabs.sendMessage(this.currentWindow.tabs[0].id, { type: 'attachSuperbotRecorder' })
-      } catch(e) {
-        console.log('tabsOnUpdatedHandler error:', e)
+        resolve(res)
+      })
+    })
+  }
+  
+  //handle commands that are sent from debugger
+  debuggerCommandHandler = (sender, method, params) => {
+    if(method === 'Overlay.inspectNodeRequested'){
+      //prevent recoding commands before open-step is recorded
+      if(UiState.displayedTest.commands.length === 0){
+        return
       }
+      chrome.debugger.sendCommand(this.debugTarget, 'DOM.getBoxModel', {
+        backendNodeId: params.backendNodeId
+      }, async (boxModelData) => {
+        const pointX = boxModelData.model.content[0] + (boxModelData.model.width / 2)
+        const pointY = boxModelData.model.content[1] + (boxModelData.model.height / 2)
+  
+        const action = await this.getElementAction();
+        let exec = null;
+        switch(action){
+          case 'click': 
+            exec = `
+              window.elem = nodeResolver(document.elementFromPoint(${pointX}, ${pointY}));
+              window.selector = cssPathBuilder(window.elem);
+              window.elem.click();
+              window.elem = null;
+              window.selector;
+            `;
+          break;
+
+          case 'doubleClick':
+            exec = `
+              window.elem = nodeResolver(document.elementFromPoint(${pointX}, ${pointY}));
+              window.selector = cssPathBuilder(window.elem);
+              window.elem.click();
+              window.elem.click();
+              window.elem = null;
+              window.selector;
+            `;
+          break;
+
+          case 'waitForElementPresent':
+            exec = `cssPathBuilder(nodeResolver(document.elementFromPoint(${pointX}, ${pointY})));`;
+          break;
+
+          case 'verifyText':
+            exec = `
+              window.elem = nodeResolver(document.elementFromPoint(${pointX}, ${pointY}));
+              window.selector = cssPathBuilder(window.elem);
+              window.text = window.elem.innerText;
+              window.elem = null;
+              JSON.stringify({ selector: window.selector, text: window.text })
+            `;
+          break;
+
+          case 'cancel':
+            return;
+          break;
+
+          default: return console.log('Action not recognized:', action); break;
+        }
+        
+        //passthrough users click and get element selector
+        chrome.debugger.sendCommand(this.debugTarget, 'Runtime.evaluate', {
+          expression: exec,
+          includeCommandLineAPI: true
+        }, result => {
+          if(action === 'verifyText'){
+            const res = JSON.parse(result.result.value)
+            this.recordCommand(action, [['css=' + res.selector]], res.text)
+          } else if(action === 'waitForElementPresent'){
+            this.recordCommand(action, [['css=' + result.result.value]], '7')
+          } else {
+            this.recordCommand(action, [['css=' + result.result.value]], '')
+          }
+        })
+      })
     }
   }
 
@@ -213,13 +329,5 @@ export default class SuperbotRecorder {
       this.recordCommand('open', [[target.url]], '')
       this.recordOpenStep = false
     }
-  }
-
-  debugMessageHandler = (message, sender, sendResponse) => {
-    if(message.type !== 'debug' || sender.tab.id !== this.currentWindow.tabs[0].id){
-      return
-    }
-    console.log('DEBUG:', message.obj)
-    sendResponse(true)
   }
 }
