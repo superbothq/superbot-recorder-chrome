@@ -298,6 +298,7 @@ export default {
       { from: 'content/indicator.html', to: '../' },
       { from: 'content/indicator.js', to: './' },
       { from: 'manifest.json', to: '../' },
+      { from: '../robot_face.svg', to: '../' },
       { from: 'icons', to: '../icons' },
     ]),
     // Generates an `index.html` file with the <script> injected.

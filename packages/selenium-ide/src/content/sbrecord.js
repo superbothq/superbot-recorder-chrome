@@ -1,104 +1,65 @@
 import { addRecordingIndicator } from './recordingIndicator'
 import cssPathBuilder from './cssPathBuilder'
 
-const EventHandlers = []
-let attached = false
-
 // tell extension to evaluate scripts needed for creating selectors later on
 chrome.runtime.sendMessage({ type: 'exec' })
 
+const EventHandlers = []
+let attached = false
+
+//Mode Indicator
+const modes = ['click', 'verify text', 'wait for element']
+let currentMode = 0;
+const maxMode = modes.length-1;
+
 const messageHandler = (message, sender, sendResponse) => {
-  switch(message.type){
-    case 'attachSuperbotRecorder':
-      if(!attached){
-        addRecordingIndicator();
-        attachEventHandlers();
-        attached = true;
-        sendResponse(attached);
+  if(message.type === 'attachSuperbotRecorder' && !attached){
+    addRecordingIndicator();
+    chrome.runtime.sendMessage({ type: 'getMode' }, (res) => {
+      if(res !== 0){
+        currentMode = res;
       }
-    break;
-
-    case 'showActionPalette':
-      showActionPalette(sendResponse);
-      return true;
-    break;
-
-    default: break;
+      addModeIndicator();
+    });
+    attachEventHandlers();
+    attached = true;
+    sendResponse(attached);
   }
 }
+const addModeIndicator = () => {
+  const modeIndicator = window.document.createElement('div');
+  modeIndicator.id = 'superbot-mode-indicator';
+  modeIndicator.innerText = modes[currentMode];
+  modeIndicator.style.color = '#000';
+  modeIndicator.style.backgroundColor = '#fff';
+  modeIndicator.style.fontSize = '17px';
+  modeIndicator.style.fontFamily = 'Arial, Helvetica, sans-serif';
+  modeIndicator.style.fontWeight = 'bold';
+  modeIndicator.style.width = '210px';
+  modeIndicator.style.padding = '5px';
+  modeIndicator.style.textAlign = 'center';
+  modeIndicator.style.zIndex = 2147483647;
+  modeIndicator.style.position = 'fixed';
+  modeIndicator.style.top = '5px';
+  modeIndicator.style.border = 'none';
+  window.document.body.appendChild(modeIndicator);
 
-const preventClicks = (event) => {
-  for(let i = 0; i < event.path.length; i++){
-    if(event.path[i].id === 'action-palette'){
-      return;
+  window.addEventListener('keydown', event => {
+    event.preventDefault();
+    console.log('modeIndicator:', event);  
+    if(event.target.tagName.toLowerCase() !== 'input' && event.keyCode === 32){
+      const elem = document.getElementById('superbot-mode-indicator');
+      if(currentMode + 1 <= maxMode){
+        currentMode++;
+        elem.innerText = modes[currentMode];
+        chrome.runtime.sendMessage({ type: 'setMode', mode: currentMode });
+      } else if(currentMode + 1 > maxMode){
+        currentMode = 0;
+        elem.innerText = modes[currentMode];
+        chrome.runtime.sendMessage({ type: 'setMode', mode: currentMode });
+      }
     }
-  }
-  event.preventDefault();
-  event.stopPropagation();
-  event.stopImmediatePropagation();
-}
-
-const actionPaletteOnclick = (actionPalette, action, sendResponse) => {
-  actionPalette.remove();
-  document.removeEventListener('click', preventClicks, true);
-  sendResponse(action)
-}
-
-const showActionPalette = (sendResponse) => {
-  const fragment = document.createDocumentFragment()
-  const actionPalette = document.createElement('div');
-  actionPalette.id = 'action-palette';
-  actionPalette.style.backgroundColor = '#fff';
-  actionPalette.style.color = '#000';
-  actionPalette.style.width = '145px';
-  actionPalette.style.position = 'fixed';
-  actionPalette.style.top = '50px';
-  actionPalette.style.left = '50px';
-  actionPalette.style.fontSize = '17px';
-  actionPalette.style.fontFamily = 'arial, helvetica, sans-serif';
-  actionPalette.style.border = '1px solid #000';
-  actionPalette.style.zIndex = 2147483647;
-  actionPalette.style.display = 'block';
-  actionPalette.style.textAlign = 'center';
-
-  const baseButton = document.createElement('div');
-  const baseButtonLabel = document.createElement('div');
-  baseButtonLabel.innerText = 'button';
-  baseButton.appendChild(baseButtonLabel);
-  baseButton.style.paddingTop = '5px';
-  baseButton.style.paddingBottom = '5px';
-  baseButton.style.borderBottom = '1px solid #ccc';
-
-  const click = baseButton.cloneNode(true);
-  click.onclick = () => actionPaletteOnclick(actionPalette, 'click', sendResponse)
-  click.childNodes[0].innerText = 'Click';
-  actionPalette.appendChild(click);
-  
-  const doubleClick = baseButton.cloneNode(true);
-  doubleClick.onclick = () => actionPaletteOnclick(actionPalette, 'doubleClick', sendResponse)
-  doubleClick.childNodes[0].innerText = 'Double Click';
-  actionPalette.appendChild(doubleClick);
-
-  const waitFor = baseButton.cloneNode(true);
-  waitFor.onclick = () => actionPaletteOnclick(actionPalette, 'waitForElementPresent', sendResponse)
-  waitFor.childNodes[0].innerText = 'Wait For';
-  actionPalette.appendChild(waitFor);
-  
-  const verify = baseButton.cloneNode(true);
-  verify.onclick = () => actionPaletteOnclick(actionPalette, 'verifyText', sendResponse)
-  verify.childNodes[0].innerText = 'Verify Text';
-  actionPalette.appendChild(verify);
-
-  const cancel = baseButton.cloneNode(true);
-  cancel.onclick = () => actionPaletteOnclick(actionPalette, 'cancel', sendResponse)
-  cancel.childNodes[0].innerText = 'Cancel';
-  actionPalette.appendChild(cancel);
-  cancel.style.borderBottom = 'none';
-  
-  //prevent clicks on action palette from closing drop down menus etc.
-  document.addEventListener('click', preventClicks, true);
-  fragment.appendChild(actionPalette);
-  document.body.appendChild(fragment);
+  }, true)
 }
 
 const addEventHandler = (type, handler) => {
@@ -126,6 +87,30 @@ const attachEventHandlers = () => {
       }
       
       recordCommand('sendKeys', selector, '${KEY_ENTER}')
+    }
+  })
+
+  addEventHandler('click', event => {
+    switch(currentMode){
+      case 0: 
+        recordCommand('click', [['css=' + cssPathBuilder(event.target)]], '');
+      break;
+
+      case 1:
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        recordCommand('verifyText', [['css=' + cssPathBuilder(event.target)]], event.target.value || event.target.innerText);
+      break;
+
+      case 2:
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        recordCommand('waitForElementPresent', [['css=' + cssPathBuilder(event.target)]], '7');
+      break;
+
+      default: console.log('wat???', currentMode); break;
     }
   })
 
