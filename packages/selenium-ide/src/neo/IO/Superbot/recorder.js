@@ -53,6 +53,7 @@ export default class SuperbotRecorder {
     this.recordOpenStep = true
     this.stateChecksInterval = null
     this.scripts = []
+    this.currentMode = 0;
 
     chrome.runtime.onMessage.addListener(this.messageHandler)
     chrome.debugger.onEvent.addListener(this.debuggerCommandHandler)
@@ -103,7 +104,7 @@ export default class SuperbotRecorder {
     try {
       await this.createRecordingWindow()
       this.stateChecks()
-      this.attachDebugger()
+      //this.attachDebugger()
       chrome.tabs.sendMessage(this.currentWindow.tabs[0].id, { type: 'attachSuperbotRecorder' })
     } catch(e) {
       console.log('Failed to attach recorder:', e)
@@ -118,6 +119,7 @@ export default class SuperbotRecorder {
 
       this.recordCommand('close', [['']], '')
 
+      /*
       chrome.debugger.detach(this.debugTarget, () => {
         if(this.currentWindow !== null){
           this.removeRecordingWindow()
@@ -127,6 +129,7 @@ export default class SuperbotRecorder {
           console.log('runtime.lastError:', chrome.runtime.lastError)
       })
       this.debugTarget = null
+      */
     } catch(e) {
       console.log('stopRecording error:', e)
     }
@@ -168,26 +171,44 @@ export default class SuperbotRecorder {
     return newCommand
   }
 
-  messageHandler = async (message, sender, sendResponse) => {
-    if(sender.tab.id !== this.currentWindow.tabs[0].id) return;
+  messageHandler = (message, sender, sendResponse) => {
+    if(this.currentWindow === null || sender.tab.id !== this.currentWindow.tabs[0].id) return;
 
     console.log('New message:', message)
-    if(message.type === 'command'){
-      this.commandHandler(message.command, message.targets, message.value);      
-    } else if(message.type === 'exec'){
-      this.scripts = []
-      const script1 = this.compileScript(cssPathBuilder, 'cssPathBuilder')
-      const script2 = this.compileScript(nodeResolver, 'nodeResolver')
-      chrome.debugger.sendCommand(this.debugTarget, 'Overlay.setInspectMode', elemHighlight)
-      chrome.debugger.sendCommand(this.debugTarget, 'Overlay.enable')
-      chrome.debugger.sendCommand(this.debugTarget, 'Runtime.enable')
-      Promise.all([script1, script2]).then(() => {
-        for(let i = 0; i < this.scripts.length; i++){
-          console.log('Script executed:', this.scripts[i].scriptName);
-          this.runScript(this.scripts[i].scriptId)
-        }
+    switch(message.type){
+      case 'command':
+        this.commandHandler(message.command, message.targets, message.value);      
+        sendResponse(true);
+      break;
+
+      case 'setMode':
+        this.currentMode = message.mode;
+        sendResponse(true);
+      break;
+
+      case 'getMode':
+        sendResponse(this.currentMode);
+      break;
+
+      case 'exec':
         chrome.tabs.sendMessage(this.currentWindow.tabs[0].id, { type: 'attachSuperbotRecorder' })
-      })
+        /*
+        this.scripts = []
+        const script1 = this.compileScript(cssPathBuilder, 'cssPathBuilder')
+        const script2 = this.compileScript(nodeResolver, 'nodeResolver')
+        chrome.debugger.sendCommand(this.debugTarget, 'Overlay.setInspectMode', elemHighlight)
+        chrome.debugger.sendCommand(this.debugTarget, 'Overlay.enable')
+        chrome.debugger.sendCommand(this.debugTarget, 'Runtime.enable')
+        Promise.all([script1, script2]).then(() => {
+          for(let i = 0; i < this.scripts.length; i++){
+            console.log('Script executed:', this.scripts[i].scriptName);
+            this.runScript(this.scripts[i].scriptId)
+          }
+          chrome.tabs.sendMessage(this.currentWindow.tabs[0].id, { type: 'attachSuperbotRecorder' })
+        })*/
+      break;
+
+      default: console.log('wat???', message.type); break;
     }
   }
 
@@ -207,8 +228,6 @@ export default class SuperbotRecorder {
         newCommand.setTargets(targets)
       }
     }
-
-    sendResponse(true)
   }
 
   compileScript = (script, name) => {

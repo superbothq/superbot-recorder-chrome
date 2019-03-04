@@ -1,5 +1,4 @@
 export const addRecordingIndicator = () => {
-  const fragment = window.document.createDocumentFragment()
   const recordingIndicator = window.document.createElement('iframe')
   recordingIndicator.src = browser.runtime.getURL('/indicator.html')
   recordingIndicator.id = 'selenium-ide-indicator'
@@ -23,6 +22,5 @@ export const addRecordingIndicator = () => {
     },
     false
   )
-  fragment.appendChild(recordingIndicator);
-  window.document.body.appendChild(fragment);
+  window.document.body.appendChild(recordingIndicator);
 }
