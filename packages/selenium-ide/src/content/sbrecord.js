@@ -27,39 +27,35 @@ const messageHandler = (message, sender, sendResponse) => {
   }
 }
 const addModeIndicator = () => {
-  const modeIndicator = window.document.createElement('div');
-  modeIndicator.id = 'superbot-mode-indicator';
-  modeIndicator.innerText = modes[currentMode];
-  modeIndicator.style.color = '#000';
-  modeIndicator.style.backgroundColor = '#fff';
-  modeIndicator.style.fontSize = '17px';
-  modeIndicator.style.fontFamily = 'Arial, Helvetica, sans-serif';
-  modeIndicator.style.fontWeight = 'bold';
-  modeIndicator.style.width = '210px';
-  modeIndicator.style.padding = '5px';
-  modeIndicator.style.textAlign = 'center';
-  modeIndicator.style.zIndex = 2147483647;
-  modeIndicator.style.position = 'fixed';
-  modeIndicator.style.top = '5px';
-  modeIndicator.style.border = 'none';
-  window.document.body.appendChild(modeIndicator);
-
-  window.addEventListener('keydown', event => {
-    event.preventDefault();
-    console.log('modeIndicator:', event);  
-    if(event.target.tagName.toLowerCase() !== 'input' && event.keyCode === 32){
-      const elem = document.getElementById('superbot-mode-indicator');
-      if(currentMode + 1 <= maxMode){
-        currentMode++;
-        elem.innerText = modes[currentMode];
-        chrome.runtime.sendMessage({ type: 'setMode', mode: currentMode });
-      } else if(currentMode + 1 > maxMode){
-        currentMode = 0;
-        elem.innerText = modes[currentMode];
-        chrome.runtime.sendMessage({ type: 'setMode', mode: currentMode });
-      }
-    }
-  }, true)
+  if(window.self === window.top){
+    const modeIndicator = window.document.createElement('div');
+    modeIndicator.id = 'superbot-mode-indicator';
+    modeIndicator.innerText = modes[currentMode];
+    modeIndicator.style.color = '#000';
+    modeIndicator.style.backgroundColor = '#fff';
+    modeIndicator.style.fontSize = '18px';
+    modeIndicator.style.fontFamily = 'Arial, Helvetica, sans-serif';
+    modeIndicator.style.fontWeight = 'bold';
+    modeIndicator.style.width = '165px';
+    modeIndicator.style.padding = '5px';
+    modeIndicator.style.textAlign = 'center';
+    modeIndicator.style.zIndex = 2147483647;
+    modeIndicator.style.position = 'fixed';
+    modeIndicator.style.top = '0px';
+    modeIndicator.style.border = 'none';
+    modeIndicator.style.boxShadow = 'rgba(0, 0, 0, 0.3) 4px 4px 3px -2px';
+    modeIndicator.addEventListener(
+      'mouseenter',
+      function(event) {
+        event.target.style.visibility = 'hidden'
+        setTimeout(function() {
+          event.target.style.visibility = 'visible'
+        }, 1000)
+      },
+      false
+    )
+    window.document.body.appendChild(modeIndicator);
+  }
 }
 
 const addEventHandler = (type, handler) => {
@@ -107,10 +103,30 @@ const attachEventHandlers = () => {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
-        recordCommand('waitForElementPresent', [['css=' + cssPathBuilder(event.target)]], '7');
+        recordCommand('waitForElementPresent', [['css=' + cssPathBuilder(event.target)]], '7000');
       break;
 
       default: console.log('wat???', currentMode); break;
+    }
+  })
+  
+  addEventHandler('mousemove', event => {
+    chrome.runtime.sendMessage({ type: 'updateMousePos', coordinates: { x: event.clientX, y: event.clientY, time: new Date().getTime() }})
+  })
+
+  addEventHandler('keydown', event => {
+    if(event.target.tagName.toLowerCase() !== 'input' && event.keyCode === 32){
+      event.preventDefault();
+      const elem = document.getElementById('superbot-mode-indicator');
+      if(currentMode + 1 <= maxMode){
+        currentMode++;
+        elem.innerText = modes[currentMode];
+        chrome.runtime.sendMessage({ type: 'setMode', mode: currentMode });
+      } else if(currentMode + 1 > maxMode){
+        currentMode = 0;
+        elem.innerText = modes[currentMode];
+        chrome.runtime.sendMessage({ type: 'setMode', mode: currentMode });
+      }
     }
   })
 

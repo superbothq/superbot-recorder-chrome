@@ -53,6 +53,7 @@ export default class SuperbotRecorder {
     this.recordOpenStep = true
     this.stateChecksInterval = null
     this.scripts = []
+    this.mouseCoordinates = []
     this.currentMode = 0;
 
     chrome.runtime.onMessage.addListener(this.messageHandler)
@@ -188,6 +189,11 @@ export default class SuperbotRecorder {
 
       case 'getMode':
         sendResponse(this.currentMode);
+      break;
+
+      case 'updateMousePos':
+        console.log('got mouse pos:', message.coordinates)
+        this.mouseCoordinates.push(message.coordinates)
       break;
 
       case 'exec':
