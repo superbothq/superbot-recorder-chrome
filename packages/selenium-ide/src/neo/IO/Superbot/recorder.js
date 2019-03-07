@@ -1,7 +1,7 @@
 import UiState from '../../stores/view/UiState'
 import { Commands, ArgTypes } from '../../models/Command'
 import { elemHighlight } from './elementHighlight'
-
+/*
 const cssPathBuilder = `
   const cssPathBuilder = (el) => {
     if (!(el instanceof Element)){
@@ -29,7 +29,7 @@ const cssPathBuilder = `
     return path.join(" > ");
   }
 `
-
+*/
 const nodeResolver = `
   const nodeResolver = (el) => {
     //return first matching targeted element
@@ -51,7 +51,6 @@ export default class SuperbotRecorder {
     this.currentWindow = null
     this.debugTarget = null
     this.recordOpenStep = true
-    this.stateChecksInterval = null
     this.scripts = []
     this.mouseCoordinates = []
     this.currentMode = 0;
@@ -83,16 +82,17 @@ export default class SuperbotRecorder {
 
   stateChecks = () => {
     try {
-      this.stateChecksInterval = setInterval(() => {
+      const stateChecksInterval = setInterval(() => {
         if(UiState.isSuperbotRecording === false){
           this.stopRecording()
-          return
+          return clearInterval(stateChecksInterval);
         }
         chrome.tabs.query({ windowId: this.currentWindow.id }, (windowInfo) => {
           if(windowInfo.length === 0){
             this.currentWindow = null
             this.stopRecording()
             UiState.toggleSuperbotRecording()
+            clearInterval(stateChecksInterval);
           }
         })
       }, 250)
@@ -115,7 +115,6 @@ export default class SuperbotRecorder {
   stopRecording = () => {
     try {
       clearInterval(this.stateChecksInterval)
-      this.stateChecksInterval = null
       this.recordOpenStep = true
 
       this.recordCommand('close', [['']], '')
@@ -173,16 +172,17 @@ export default class SuperbotRecorder {
   }
 
   messageHandler = (message, sender, sendResponse) => {
-    if(this.currentWindow === null || sender.tab.id !== this.currentWindow.tabs[0].id) return;
+    if(this.currentWindow === null || sender.tab.id !== this.currentWindow.tabs[0].id || message.type === undefined) return;
 
-    console.log('New message:', message)
     switch(message.type){
       case 'command':
+        console.log('Command received:', message);
         this.commandHandler(message.command, message.targets, message.value);      
         sendResponse(true);
       break;
 
       case 'setMode':
+        console.log('Set mode:', message);  
         this.currentMode = message.mode;
         sendResponse(true);
       break;
@@ -192,11 +192,11 @@ export default class SuperbotRecorder {
       break;
 
       case 'updateMousePos':
-        console.log('got mouse pos:', message.coordinates)
         this.mouseCoordinates.push(message.coordinates)
       break;
 
-      case 'exec':
+      case 'evaluateScripts':
+        console.log('Evaluate scripts request received:', message);
         chrome.tabs.sendMessage(this.currentWindow.tabs[0].id, { type: 'attachSuperbotRecorder' })
         /*
         this.scripts = []
@@ -214,7 +214,7 @@ export default class SuperbotRecorder {
         })*/
       break;
 
-      default: console.log('wat???', message.type); break;
+      default: console.log('Message type not recognized:', message.type); break;
     }
   }
 
@@ -260,7 +260,6 @@ export default class SuperbotRecorder {
     return new Promise(resolve => {
       chrome.debugger.sendCommand(this.debugTarget, 'Overlay.disable')
       chrome.tabs.sendMessage(this.currentWindow.tabs[0].id, { type: 'showActionPalette' }, res => {
-        console.log('getElementAction res:', res)
         chrome.debugger.sendCommand(this.debugTarget, 'Overlay.setInspectMode', elemHighlight)
         chrome.debugger.sendCommand(this.debugTarget, 'Overlay.enable')
         resolve(res)

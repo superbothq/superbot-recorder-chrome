@@ -58,7 +58,8 @@
         "assets/escape.js",
         "assets/playback.js",
         "assets/record.js",
-        "assets/sbrecord.js"
+        "assets/superbot-recorder.js",
+        "assets/extension-load-test.js"
       ],
       "match_about_blank": true,
       "all_frames": true

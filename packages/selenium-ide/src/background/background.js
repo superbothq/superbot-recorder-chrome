@@ -28,65 +28,68 @@ window.openedWindowIds = []
 if (isStaging) openPanel({ windowId: 0 })
 
 function openPanel(tab) {
-  let contentWindowId = tab.windowId
-  if (ideWindowId) {
-    browser.windows
-      .update(ideWindowId, {
-        focused: true,
-      })
-      .catch(function() {
-        ideWindowId == undefined
-        openPanel(tab)
-      })
-    return
-  } else if (!clickEnabled) {
-    return
-  }
+  return new Promise(Resolve => {
+    let contentWindowId = tab.windowId
+    if (ideWindowId) {
+      browser.windows
+        .update(ideWindowId, {
+          focused: true,
+        })
+        .catch(function() {
+          ideWindowId == undefined
+          openPanel(tab)
+        })
+      return
+    } else if (!clickEnabled) {
+      return
+    }
 
-  clickEnabled = false
-  setTimeout(function() {
-    clickEnabled = true
-  }, 1000)
+    clickEnabled = false
+    setTimeout(function() {
+      clickEnabled = true
+    }, 1000)
 
-  openWindowFromStorageResolution()
-    .then(function waitForPanelLoaded(panelWindowInfo) {
-      return new Promise(function(resolve, reject) {
-        let count = 0
-        let interval = setInterval(function() {
-          if (count > 100) {
-            reject('SideeX editor has no response')
-            clearInterval(interval)
-          }
+    openWindowFromStorageResolution()
+      .then(function waitForPanelLoaded(panelWindowInfo) {
+        return new Promise(function(resolve, reject) {
+          let count = 0
+          let interval = setInterval(function() {
+            if (count > 100) {
+              reject('SideeX editor has no response')
+              clearInterval(interval)
+            }
 
-          browser.tabs
-            .query({
-              active: true,
-              windowId: panelWindowInfo.id,
-              status: 'complete',
-            })
-            .then(function(tabs) {
-              if (tabs.length != 1) {
-                count++
-                return
-              } else {
-                master[contentWindowId] = panelWindowInfo.id
-                resolve(panelWindowInfo)
-                clearInterval(interval)
-              }
-            })
-        }, 200)
+            browser.tabs
+              .query({
+                active: true,
+                windowId: panelWindowInfo.id,
+                status: 'complete',
+              })
+              .then(function(tabs) {
+                if (tabs.length != 1) {
+                  count++
+                  return
+                } else {
+                  master[contentWindowId] = panelWindowInfo.id
+                  resolve(panelWindowInfo)
+                  clearInterval(interval)
+                }
+              })
+          }, 200)
+        })
       })
-    })
-    .then(function bridge(panelWindowInfo) {
-      ideWindowId = panelWindowInfo.id
-      return browser.tabs.sendMessage(panelWindowInfo.tabs[0].id, {
-        selfWindowId: panelWindowInfo.id,
-        commWindowId: contentWindowId,
+      .then(function bridge(panelWindowInfo) {
+        ideWindowId = panelWindowInfo.id
+        browser.tabs.sendMessage(panelWindowInfo.tabs[0].id, {
+          selfWindowId: panelWindowInfo.id,
+          commWindowId: contentWindowId,
+        })
+        Resolve();
       })
-    })
-    .catch(function(e) {
-      console.log(e) // eslint-disable-line no-console
-    })
+      .catch(function(e) {
+        console.log(e) // eslint-disable-line no-console
+      })
+  })
 }
 
 function openWindowFromStorageResolution() {
@@ -144,6 +147,18 @@ function originIsValid(origin) {
 function pointIsValid(point) {
   return point >= 0 && point.constructor.name === 'Number'
 }
+
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+  if(message.type !== 'extensionLoadTest') return;
+
+  await openPanel({ windowId: 0 });
+  chrome.runtime.sendMessage({
+    type: 'extensionLoadTest',
+    testId: message.textId
+  })
+
+  sendResponse();
+})
 
 browser.browserAction.onClicked.addListener(openPanel)
 

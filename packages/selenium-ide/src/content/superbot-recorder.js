@@ -1,8 +1,7 @@
 import { addRecordingIndicator } from './recordingIndicator'
 import cssPathBuilder from './cssPathBuilder'
 
-// tell extension to evaluate scripts needed for creating selectors later on
-chrome.runtime.sendMessage({ type: 'exec' })
+chrome.runtime.sendMessage({ type: 'evaluateScripts' })
 
 const EventHandlers = []
 let attached = false
@@ -106,7 +105,7 @@ const attachEventHandlers = () => {
         recordCommand('waitForElementPresent', [['css=' + cssPathBuilder(event.target)]], '7000');
       break;
 
-      default: console.log('wat???', currentMode); break;
+      default: console.log('Current action mode not recognized:', currentMode); break;
     }
   })
   
@@ -117,6 +116,8 @@ const attachEventHandlers = () => {
   addEventHandler('keydown', event => {
     if(event.target.tagName.toLowerCase() !== 'input' && event.keyCode === 32){
       event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
       const elem = document.getElementById('superbot-mode-indicator');
       if(currentMode + 1 <= maxMode){
         currentMode++;

@@ -276,28 +276,58 @@ export default class Panel extends React.Component {
   }
 
   handleLogin = () => {
-    fetch('https://superbot.cloud/login/cloud/credentials.json')
-    .then(res => {
-      console.log(res)
-      if(res.status === 200 && res.redirected === false){
-        return res.json()
-      } else if (res.status === 200 && res.redirected === true){
-        return Promise.reject('Login needed!')
-      } else {
-        return Promise.reject('Error fetching credentials!')
-      }
-    }).then(creds => {
-      console.log('login creds', creds)
-      this.setState({ user: creds }, () => {
-        this.loadNewProject()
-      })
-    }).catch(e => console.log(e))
+    return new Promise(resolve => {
+      fetch('https://superbot.cloud/login/cloud/credentials.json')
+      .then(res => {
+        console.log(res)
+        if(res.status === 200 && res.redirected === false){
+          return res.json()
+        } else if (res.status === 200 && res.redirected === true){
+          return Promise.reject('Login needed!')
+        } else {
+          return Promise.reject('Error fetching credentials!')
+        }
+      }).then(creds => {
+        console.log('login creds', creds)
+        this.setState({ user: creds }, () => {
+          this.loadNewProject()
+          resolve();
+        });
+      }).catch(e => console.log(e))
+    })
+  }
 
   getAuthorizationToken = () => new Buffer(this.state.user.username + ':' + this.state.user.token).toString('base64');
 
-  uploadTest = () => {
+  getTest = (id) => {
+    return new Promise(resolve => {
+      fetch('https://superbot.cloud/api/v1/tests', {
+        method: 'GET',
+        headers: {
+          'Authorization': 'Basic ' + this.getAuthorizationToken()
+        }
+      }).then(res => {
+        if(res.status === 200){
+          return res.json();
+        } else {
+          return Promise.reject('Failed to fetch tests!');
+        }
+      }).then(res => {
+        for(let i = 0; i < res.tests.length; i++){
+          if(res.tests[i].id === parseInt(id)){
+            return resolve(res.tests[i]);
+          }
+        }
+        return null;
+      })
+    })
+  }
+
+  uploadTest = async () => {
+    let projectName = this.state.project.name;
+    projectName = projectName === null || projectName === 'Untitled Test' ? await ModalState.renameProject() : projectName;
     const suite = {
-      name: this.state.project.name,
+      name: projectName,
       organization: this.state.user.username,
       description: '',
       files: [{ content: project.toJS() }]
@@ -338,8 +368,30 @@ export default class Panel extends React.Component {
     .catch(e => console.log(e))
   }
 
-  componentDidMount(){
-    this.handleLogin()
+  
+  extensionLoadTest = async (message) => {
+    try {
+      if(this.state.user === null){
+        await this.handleLogin();
+      }
+      if(message.type === 'extensionLoadTest'){
+        const test = await this.getTest(message.testId);
+        const newProject = observable(new ProjectStore(''))
+        newProject.fromJS(JSON.parse(test.files[0].content));
+        this.setState({ project: newProject }, () => {
+          console.log('current state project:', this.state.project);
+          loadJSProject(this.state.project, this.state.project);
+          UiState.selectTest(this.state.project._tests[0], this.state.project._suites[0]);
+        });
+      } 
+    } catch(e){
+      console.log('Error loading test:', e)
+    }
+  }
+
+  async componentWillMount(){
+    chrome.runtime.onMessage.addListener(this.extensionLoadTest);
+    await this.handleLogin();
     /*
     window.addEventListener('keypress', (event) => {
       console.log('keypress event', event)
@@ -391,7 +443,7 @@ export default class Panel extends React.Component {
               url={this.state.project.url}
               urls={this.state.project.urls}
               setUrl={this.state.project.setUrl}
-              test={UiState.displayedTest}
+              test={this.state.project.tests[0]}
               callstackIndex={UiState.selectedTest.stack}
               isRecording={UiState.isRecording}
               isPlaying={PlaybackState.isPlaying}
