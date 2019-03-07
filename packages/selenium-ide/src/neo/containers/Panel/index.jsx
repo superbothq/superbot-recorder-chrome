@@ -265,7 +265,8 @@ export default class Panel extends React.Component {
     }
   }
   async createNewProject() {
-    const name = await ModalState.renameProject()
+    //const name = await ModalState.renameProject()
+    const name = 'Untitled Test';
     const newProject = observable(new ProjectStore(name))
     createDefaultSuite(newProject, { suite: 'Default Suite', test: name })
     loadJSProject(this.state.project, newProject.toJS())
@@ -291,7 +292,8 @@ export default class Panel extends React.Component {
         this.loadNewProject()
       })
     }).catch(e => console.log(e))
-  }
+
+  getAuthorizationToken = () => new Buffer(this.state.user.username + ':' + this.state.user.token).toString('base64');
 
   uploadTest = () => {
     const suite = {
@@ -321,7 +323,7 @@ export default class Panel extends React.Component {
       method: 'POST',
       body: formData,
       headers: {
-        'Authorization': `Token token="${this.state.user.token}", email="${this.state.user.email}"`,
+        'Authorization': 'Basic ' + this.getAuthorizationToken()
       }
     }).then(res => {
       if(res.status === 200){
