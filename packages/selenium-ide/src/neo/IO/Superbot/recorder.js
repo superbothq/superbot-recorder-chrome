@@ -57,12 +57,18 @@ export default class SuperbotRecorder {
 
     chrome.runtime.onMessage.addListener(this.messageHandler)
     chrome.debugger.onEvent.addListener(this.debuggerCommandHandler)
-    chrome.webNavigation.onBeforeNavigate.addListener(this.navigationHandler)
+    chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+      if(this.recordOpenStep && !tab.url.includes('chrome://') && !tab.url.includes('chrome-extension://')){
+        this.recordCommand('open', [[tab.url]], '')
+        this.attachDebugger()
+        this.recordOpenStep = false
+      }
+    })
   }
 
   createRecordingWindow = () => {
     return new Promise((resolve) => {
-      chrome.windows.create({ url: 'about:blank' }, (_window) => {
+      chrome.windows.create({ url: 'chrome://newtab/' }, (_window) => {
         this.currentWindow = _window
         resolve()
       })
@@ -105,7 +111,6 @@ export default class SuperbotRecorder {
     try {
       await this.createRecordingWindow()
       this.stateChecks()
-      //this.attachDebugger()
       chrome.tabs.sendMessage(this.currentWindow.tabs[0].id, { type: 'attachSuperbotRecorder' })
     } catch(e) {
       console.log('Failed to attach recorder:', e)
@@ -113,48 +118,37 @@ export default class SuperbotRecorder {
   }
 
   stopRecording = () => {
-    try {
-      clearInterval(this.stateChecksInterval)
-      this.recordOpenStep = true
+    clearInterval(this.stateChecksInterval)
+    this.recordOpenStep = true
 
-      this.recordCommand('close', [['']], '')
+    this.recordCommand('close', [['']], '')
 
-      /*
-      chrome.debugger.detach(this.debugTarget, () => {
-        if(this.currentWindow !== null){
-          this.removeRecordingWindow()
-          this.currentWindow = null
-        }
-        if(chrome.runtime.lastError !== undefined)
-          console.log('runtime.lastError:', chrome.runtime.lastError)
-      })
-      this.debugTarget = null
-      */
-    } catch(e) {
-      console.log('stopRecording error:', e)
-    }
+    chrome.debugger.detach(this.debugTarget, () => {
+      if(this.currentWindow !== null){
+        this.removeRecordingWindow()
+        this.currentWindow = null
+      }
+      if(chrome.runtime.lastError !== undefined)
+        console.log('runtime.lastError:', chrome.runtime.lastError)
+    })
+    this.debugTarget = null
   }
 
 
   attachDebugger = () => {
-    try {
-      chrome.debugger.getTargets(targets => {
-        const newTarget = targets.filter(target => target.tabId === this.currentWindow.tabs[0].id)[0]
-        this.debugTarget = {
-          targetId: newTarget.id
-        }
+    chrome.debugger.getTargets(targets => {
+      const newTarget = targets.filter(target => target.tabId === this.currentWindow.tabs[0].id)[0]
+      this.debugTarget = {
+        targetId: newTarget.id
+      }
 
-        if(!newTarget.attached){
-          chrome.debugger.attach(this.debugTarget, '1.3', () => {
-            if(chrome.runtime.lastError !== undefined){
-              console.log('debugger attach error:', chrome.runtime.lastError)
-            }
-          })
-        }
-      })
-    } catch(e) {
-      console.log('attachDebugger error:', e)
-    }
+      if(!newTarget.attached){
+        chrome.debugger.attach(this.debugTarget, '1.3', () => {
+          if(chrome.runtime.lastError !== undefined)
+            console.log('debugger attach error:', chrome.runtime.lastError) 
+        })
+      }
+    })
   }
 
   recordCommand = (command, targets, value) => {
@@ -195,23 +189,13 @@ export default class SuperbotRecorder {
         this.mouseCoordinates.push(message.coordinates)
       break;
 
+      case 'debuggerCommand':
+        this.switchDebuggerHighlight(message.enabled);
+      break;
+
       case 'evaluateScripts':
         console.log('Evaluate scripts request received:', message);
         chrome.tabs.sendMessage(this.currentWindow.tabs[0].id, { type: 'attachSuperbotRecorder' })
-        /*
-        this.scripts = []
-        const script1 = this.compileScript(cssPathBuilder, 'cssPathBuilder')
-        const script2 = this.compileScript(nodeResolver, 'nodeResolver')
-        chrome.debugger.sendCommand(this.debugTarget, 'Overlay.setInspectMode', elemHighlight)
-        chrome.debugger.sendCommand(this.debugTarget, 'Overlay.enable')
-        chrome.debugger.sendCommand(this.debugTarget, 'Runtime.enable')
-        Promise.all([script1, script2]).then(() => {
-          for(let i = 0; i < this.scripts.length; i++){
-            console.log('Script executed:', this.scripts[i].scriptName);
-            this.runScript(this.scripts[i].scriptId)
-          }
-          chrome.tabs.sendMessage(this.currentWindow.tabs[0].id, { type: 'attachSuperbotRecorder' })
-        })*/
       break;
 
       default: console.log('Message type not recognized:', message.type); break;
@@ -236,35 +220,13 @@ export default class SuperbotRecorder {
     }
   }
 
-  compileScript = (script, name) => {
-    return new Promise(resolve => {
-      chrome.debugger.sendCommand(this.debugTarget, 'Runtime.compileScript', {
-        expression: script,
-        sourceURL: name,
-        persistScript: true
-      }, res => {
-        const found = this.scripts.find(s => s.scriptId === res.scriptId)
-        if(res !== undefined && found === undefined){
-          this.scripts.push({ scriptName: name, scriptId: res.scriptId })          
-        }
-        resolve()
-      })
-    })
-  }
-
-  runScript = (scriptId) => {
-    chrome.debugger.sendCommand(this.debugTarget, 'Runtime.runScript', { scriptId: scriptId });
-  }
-
-  getElementAction = () => {
-    return new Promise(resolve => {
+  switchDebuggerHighlight = (enabled = true) => {
+    if(enabled){
+      chrome.debugger.sendCommand(this.debugTarget, 'Overlay.setInspectMode', elemHighlight)
+      chrome.debugger.sendCommand(this.debugTarget, 'Overlay.enable')
+    } else {
       chrome.debugger.sendCommand(this.debugTarget, 'Overlay.disable')
-      chrome.tabs.sendMessage(this.currentWindow.tabs[0].id, { type: 'showActionPalette' }, res => {
-        chrome.debugger.sendCommand(this.debugTarget, 'Overlay.setInspectMode', elemHighlight)
-        chrome.debugger.sendCommand(this.debugTarget, 'Overlay.enable')
-        resolve(res)
-      })
-    })
+    }
   }
   
   //handle commands that are sent from debugger
@@ -340,17 +302,6 @@ export default class SuperbotRecorder {
           }
         })
       })
-    }
-  }
-
-  navigationHandler = (target) => {
-    if(this.currentWindow === null || target.tabId !== this.currentWindow.tabs[0].id){
-      return
-    }
-    
-    if(this.recordOpenStep && target.url !== 'about:blank'){
-      this.recordCommand('open', [[target.url]], '')
-      this.recordOpenStep = false
     }
   }
 }
