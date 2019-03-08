@@ -313,9 +313,12 @@ export default class Panel extends React.Component {
           return Promise.reject('Failed to fetch tests!');
         }
       }).then(res => {
+        //For each file in each test
         for(let i = 0; i < res.tests.length; i++){
-          if(res.tests[i].id === parseInt(id)){
-            return resolve(res.tests[i]);
+          for(let x = 0; x < res.tests[i].files.length; x++){
+            if(res.tests[i].files[x].id === id){
+              return resolve(res.tests[i].files[x]);
+            }
           }
         }
         return null;
@@ -370,20 +373,19 @@ export default class Panel extends React.Component {
 
   
   extensionLoadTest = async (message) => {
+    if(message.type !== 'extensionLoadTest') return;
+
     try {
       if(this.state.user === null){
         await this.handleLogin();
       }
-      if(message.type === 'extensionLoadTest'){
-        const test = await this.getTest(message.testId);
-        const newProject = observable(new ProjectStore(''))
-        newProject.fromJS(JSON.parse(test.files[0].content));
-        this.setState({ project: newProject }, () => {
-          console.log('current state project:', this.state.project);
-          loadJSProject(this.state.project, this.state.project);
-          UiState.selectTest(this.state.project._tests[0], this.state.project._suites[0]);
-        });
-      } 
+      const test = await this.getTest(message.testId);
+      const newProject = observable(new ProjectStore(''))
+      newProject.fromJS(JSON.parse(test.content));
+      this.setState({ project: newProject }, () => {
+        loadJSProject(this.state.project, this.state.project);
+        UiState.selectTest(this.state.project._tests[0], this.state.project._suites[0]);
+      });
     } catch(e){
       console.log('Error loading test:', e)
     }
@@ -410,8 +412,6 @@ export default class Panel extends React.Component {
     }
   }
   render() {
-    console.log('selected test', UiState.selectedTest)
-    console.log('displayed test', UiState.displayedTest)
     if(this.state.user === null){
       return (
         <LoginPage
