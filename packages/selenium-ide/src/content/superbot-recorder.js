@@ -26,35 +26,49 @@ const messageHandler = (message, sender, sendResponse) => {
   }
 }
 const addModeIndicator = () => {
-  if(window.self === window.top){
-    const modeIndicator = window.document.createElement('div');
-    modeIndicator.id = 'superbot-mode-indicator';
-    modeIndicator.innerText = modes[currentMode];
-    modeIndicator.style.color = '#000';
-    modeIndicator.style.backgroundColor = '#fff';
-    modeIndicator.style.fontSize = '18px';
-    modeIndicator.style.fontFamily = 'Arial, Helvetica, sans-serif';
-    modeIndicator.style.fontWeight = 'bold';
-    modeIndicator.style.width = '165px';
-    modeIndicator.style.padding = '5px';
-    modeIndicator.style.textAlign = 'center';
-    modeIndicator.style.zIndex = 2147483647;
-    modeIndicator.style.position = 'fixed';
-    modeIndicator.style.top = '0px';
-    modeIndicator.style.border = 'none';
-    modeIndicator.style.boxShadow = 'rgba(0, 0, 0, 0.3) 4px 4px 3px -2px';
-    modeIndicator.addEventListener(
-      'mouseenter',
-      function(event) {
-        event.target.style.visibility = 'hidden'
-        setTimeout(function() {
-          event.target.style.visibility = 'visible'
-        }, 1000)
-      },
-      false
-    )
-    window.document.body.appendChild(modeIndicator);
-  }
+  if(window.self !== window.top) return;
+
+  const modeIndicator = window.document.createElement('div');
+  modeIndicator.id = 'superbot-mode-indicator';
+  modeIndicator.innerText = 'Current mode: ' + modes[currentMode];
+  modeIndicator.style.color = '#333';
+  //modeIndicator.style.backgroundColor = '#fff';
+  modeIndicator.style.fontSize = '16px';
+  modeIndicator.style.fontFamily = 'Arial, Helvetica, sans-serif';
+  modeIndicator.style.fontWeight = 'bold';
+  modeIndicator.style.width = '277px';
+  modeIndicator.style.padding = '5px';
+  modeIndicator.style.textAlign = 'center';
+  modeIndicator.style.zIndex = 2147483647;
+  modeIndicator.style.position = 'fixed';
+  //modeIndicator.style.top = '0px';
+  modeIndicator.style.bottom = '40px';
+  modeIndicator.style.right = '40px';
+  modeIndicator.style.border = 'none';
+  modeIndicator.style.margin = 'initial';
+  modeIndicator.style.backgroundColor = 'initial';
+  modeIndicator.style.borderRadius = 'initial';
+  //modeIndicator.style.boxShadow = 'rgba(0, 0, 0, 0.3) 4px 4px 3px -2px';
+  document.getElementById('selenium-ide-indicator').addEventListener(
+    'mouseenter',() => {
+      modeIndicator.style.visibility = 'hidden'
+      setTimeout(function() {
+        modeIndicator.style.visibility = 'visible'
+      }, 1000)
+    },
+    false
+  )
+  window.document.body.appendChild(modeIndicator);
+}
+
+const highlightElement = (elem) => {
+  if(window.self !== window.top) return;
+
+  elem.style.border = '10px solid green';
+  setTimeout(() => {
+    elem.style.border = 'initial';
+  }, 150)
+
 }
 
 const addEventHandler = (type, handler) => {
@@ -86,26 +100,16 @@ const attachEventHandlers = () => {
   })
 
   addEventHandler('click', event => {
-    switch(currentMode){
-      case 0: 
-        recordCommand('click', [['css=' + cssPathBuilder(event.target)]], '');
-      break;
-
-      case 1:
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-        recordCommand('verifyText', [['css=' + cssPathBuilder(event.target)]], event.target.value || event.target.innerText);
-      break;
-
-      case 2:
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-        recordCommand('waitForElementPresent', [['css=' + cssPathBuilder(event.target)]], '7000');
-      break;
-
-      default: console.log('Current action mode not recognized:', currentMode); break;
+    highlightElement(event.target);
+    if(modes[currentMode] === 'click'){
+      recordCommand(modes[currentMode], [['css=' + cssPathBuilder(event.target)]], '');
+    } else {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      const command = modes[currentMode] === 'verify text' ? 'verifyText' : 'waitForElementPresent';
+      const value = modes[currentMode] === 'verify text' ? (event.target.value || event.target.innerText) : '7000';
+      recordCommand(command, [['css=' + cssPathBuilder(event.target)]], value);
     }
   })
   
@@ -119,15 +123,9 @@ const attachEventHandlers = () => {
       event.stopPropagation();
       event.stopImmediatePropagation();
       const elem = document.getElementById('superbot-mode-indicator');
-      if(currentMode + 1 <= maxMode){
-        currentMode++;
-        elem.innerText = modes[currentMode];
-        chrome.runtime.sendMessage({ type: 'setMode', mode: currentMode });
-      } else if(currentMode + 1 > maxMode){
-        currentMode = 0;
-        elem.innerText = modes[currentMode];
-        chrome.runtime.sendMessage({ type: 'setMode', mode: currentMode });
-      }
+      currentMode = currentMode + 1 <= maxMode ? currentMode + 1 : 0
+      elem.innerText = 'Current mode: ' + modes[currentMode];
+      chrome.runtime.sendMessage({ type: 'setMode', mode: currentMode });
     }
   })
 
