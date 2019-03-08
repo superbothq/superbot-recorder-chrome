@@ -1,7 +1,7 @@
 import UiState from '../../stores/view/UiState'
 import { Commands, ArgTypes } from '../../models/Command'
 import { elemHighlight } from './elementHighlight'
-/*
+
 const cssPathBuilder = `
   const cssPathBuilder = (el) => {
     if (!(el instanceof Element)){
@@ -29,7 +29,7 @@ const cssPathBuilder = `
     return path.join(" > ");
   }
 `
-*/
+
 const nodeResolver = `
   const nodeResolver = (el) => {
     //return first matching targeted element
@@ -46,12 +46,23 @@ const nodeResolver = `
   }
 `
 
+const highlightElement = `
+  const highlightElement = (elem) => {
+    if(window.self !== window.top) return;
+
+    elem.style.border = '10px solid green';
+    setTimeout(() => {
+      elem.style.border = 'initial';
+    }, 150)
+
+}
+`
+
 export default class SuperbotRecorder {
   constructor(){
     this.currentWindow = null
     this.debugTarget = null
     this.recordOpenStep = true
-    this.scripts = []
     this.mouseCoordinates = []
     this.currentMode = 0;
 
@@ -62,6 +73,11 @@ export default class SuperbotRecorder {
         this.recordCommand('open', [[tab.url]], '')
         this.attachDebugger()
         this.recordOpenStep = false
+      }
+      if(this.debugTarget !== null){
+        this.runDebuggerScript(cssPathBuilder, 'cssPathBuilder')
+        this.runDebuggerScript(nodeResolver, 'nodeResolver')
+        this.runDebuggerScript(highlightElement, 'highlightElement')
       }
     })
   }
@@ -144,13 +160,28 @@ export default class SuperbotRecorder {
 
       if(!newTarget.attached){
         chrome.debugger.attach(this.debugTarget, '1.3', () => {
-          if(chrome.runtime.lastError !== undefined)
-            console.log('debugger attach error:', chrome.runtime.lastError) 
+          if(chrome.runtime.lastError !== undefined){
+            return console.log('debugger attach error:', chrome.runtime.lastError)
+          } else {
+            chrome.debugger.sendCommand(this.debugTarget, 'Runtime.enable')
+          }
         })
       }
     })
   }
 
+  runDebuggerScript = (script, name) => {
+    return new Promise(resolve => {
+      chrome.debugger.sendCommand(this.debugTarget, 'Runtime.compileScript', {
+        expression: script,
+        sourceURL: name,
+        persistScript: true
+      }, res => {
+        chrome.debugger.sendCommand(this.debugTarget, 'Runtime.runScript', { scriptId: res.scriptId });   
+        resolve()
+      })
+    })
+  }
   recordCommand = (command, targets, value) => {
     const test = UiState.displayedTest
 
@@ -228,7 +259,7 @@ export default class SuperbotRecorder {
       chrome.debugger.sendCommand(this.debugTarget, 'Overlay.disable')
     }
   }
-  
+
   //handle commands that are sent from debugger
   debuggerCommandHandler = (sender, method, params) => {
     if(method === 'Overlay.inspectNodeRequested'){
@@ -241,64 +272,37 @@ export default class SuperbotRecorder {
       }, async (boxModelData) => {
         const pointX = boxModelData.model.content[0] + (boxModelData.model.width / 2)
         const pointY = boxModelData.model.content[1] + (boxModelData.model.height / 2)
-  
-        const action = await this.getElementAction();
-        let exec = null;
-        switch(action){
-          case 'click': 
-            exec = `
-              window.elem = nodeResolver(document.elementFromPoint(${pointX}, ${pointY}));
-              window.selector = cssPathBuilder(window.elem);
-              window.elem.click();
-              window.elem = null;
-              window.selector;
-            `;
-          break;
 
-          case 'doubleClick':
-            exec = `
-              window.elem = nodeResolver(document.elementFromPoint(${pointX}, ${pointY}));
-              window.selector = cssPathBuilder(window.elem);
-              window.elem.click();
-              window.elem.click();
-              window.elem = null;
-              window.selector;
-            `;
-          break;
-
-          case 'waitForElementPresent':
-            exec = `cssPathBuilder(nodeResolver(document.elementFromPoint(${pointX}, ${pointY})));`;
-          break;
-
-          case 'verifyText':
-            exec = `
-              window.elem = nodeResolver(document.elementFromPoint(${pointX}, ${pointY}));
-              window.selector = cssPathBuilder(window.elem);
-              window.text = window.elem.innerText;
-              window.elem = null;
-              JSON.stringify({ selector: window.selector, text: window.text })
-            `;
-          break;
-
-          case 'cancel':
-            return;
-          break;
-
-          default: return console.log('Action not recognized:', action); break;
+        let exec = null
+        if(this.currentMode === 1){
+          exec = `
+          window.elem = nodeResolver(document.elementFromPoint(${pointX}, ${pointY}));
+          window.elemText = window.elem.innerText || window.elem.innerValue;
+          window.selector = cssPathBuilder(window.elem);
+          highlightElement(window.elem);
+          window.elem = null;
+          window.result = JSON.stringify({ selector: window.selector, text: window.elemText });`
+        } else if(this.currentMode === 0 || this.currentMode === 2){
+          exec = `
+          window.elem = nodeResolver(document.elementFromPoint(${pointX}, ${pointY}));
+          window.selector = cssPathBuilder(window.elem);
+          highlightElement(window.elem);
+          window.elem = null;
+          window.selector;`
         }
         
-        //passthrough users click and get element selector
         chrome.debugger.sendCommand(this.debugTarget, 'Runtime.evaluate', {
           expression: exec,
           includeCommandLineAPI: true
         }, result => {
-          if(action === 'verifyText'){
+          console.log('result:', result)
+          if(this.currentMode === 1){
             const res = JSON.parse(result.result.value)
-            this.recordCommand(action, [['css=' + res.selector]], res.text)
-          } else if(action === 'waitForElementPresent'){
-            this.recordCommand(action, [['css=' + result.result.value]], '7')
+            this.recordCommand('verifyText', [['css=' + res.selector]], res.text)
+          } else if(this.currentMode === 2){
+            this.recordCommand('waitForElementPresent', [['css=' + result.result.value]], '7')
           } else {
-            this.recordCommand(action, [['css=' + result.result.value]], '')
+            this.recordCommand('click', [['css=' + result.result.value]], '')
           }
         })
       })

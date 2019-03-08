@@ -68,7 +68,6 @@ const highlightElement = (elem) => {
   setTimeout(() => {
     elem.style.border = 'initial';
   }, 150)
-
 }
 
 const addEventHandler = (type, handler) => {
@@ -126,6 +125,11 @@ const attachEventHandlers = () => {
       currentMode = currentMode + 1 <= maxMode ? currentMode + 1 : 0
       elem.innerText = 'Current mode: ' + modes[currentMode];
       chrome.runtime.sendMessage({ type: 'setMode', mode: currentMode });
+      if(modes[currentMode] === 'click'){
+        chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: false })
+      } else {
+        chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: true })
+      }
     }
   })
 
