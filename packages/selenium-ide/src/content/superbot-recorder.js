@@ -13,6 +13,9 @@ const messageHandler = message => {
   if(message.type === 'attachSuperbotRecorder' && !attached){
     chrome.runtime.sendMessage({ type: 'getMode' }, savedModeIndex => {
       currentModeIndex = savedModeIndex;
+      if(currentModeIndex !== 0){
+        chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: true })
+      }
       addModeIndicator(modes[currentModeIndex]);
     });
     attachEventHandlers();
@@ -43,7 +46,7 @@ const highlightElement = (coords) => {
   window.document.body.appendChild(targetIndicator);
   setTimeout(() => {
     targetIndicator.remove();
-  }, 150);
+  }, 100);
 }
 
 const advanceCurrentMode = (targetMode = null) => {
@@ -80,6 +83,7 @@ const attachEventHandlers = () => {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
+      return;
     }
     const coords = event.target.getBoundingClientRect();
     highlightElement(coords);

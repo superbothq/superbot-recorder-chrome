@@ -30,22 +30,6 @@ const helpers = `
     return path.join(" > ");
   }
 
-  const nodeResolver = (el) => {
-    if(el === null) return;
-
-    //return first matching targeted element
-    if(typeof el.click === 'function'){
-      return el
-    } else {
-      //return first matching parent element
-      let pNode = el.parentNode
-      while(typeof pNode.click !== 'function'){
-        pNode = pNode.parentNode
-      }
-      return pNode
-    }
-  }
-
   const highlightElement = (coords) => {
     if(window.self !== window.top) return;
     const targetIndicator = window.document.createElement('div');
@@ -60,7 +44,7 @@ const helpers = `
     window.document.body.appendChild(targetIndicator);
     setTimeout(() => {
       targetIndicator.remove();
-    }, 150);
+    }, 100);
   }`
 
 //TODO: remove this duplicate mode list, content script recorder already has one
@@ -72,7 +56,7 @@ export default class SuperbotRecorder {
     this.debugTarget = null
     //TODO: do something with these
     this.mouseCoordinates = []
-    this.currentMode = 0;
+    this.currentMode = 3;
 
     chrome.runtime.onMessage.addListener(this.messageHandler)
     chrome.debugger.onEvent.addListener(this.debuggerCommandHandler)
@@ -154,6 +138,7 @@ export default class SuperbotRecorder {
       chrome.windows.getCurrent(window => {
         chrome.tabs.getSelected(window.id, response => {
           chrome.windows.update(response.windowId, { focused: true }, () => {
+            console.log('Extension window should focus now')
             checkForErrors('stop recording focus window');
           });
         });
@@ -221,6 +206,9 @@ export default class SuperbotRecorder {
         chrome.debugger.sendCommand(this.debugTarget, 'DOM.getBoxModel', {
         backendNodeId: params.backendNodeId
       }, boxModelData => {
+        if(boxModelData === undefined){
+          return;
+        }
         const pointX = boxModelData.model.content[0] + (boxModelData.model.width / 2)
         const pointY = boxModelData.model.content[1] + (boxModelData.model.height / 2)
 
@@ -228,18 +216,24 @@ export default class SuperbotRecorder {
         switch(modes[this.currentMode]){
           case 'assert text':
             execScript = `
-            elem = nodeResolver(document.elementFromPoint(${pointX}, ${pointY}));
-            selector = cssPathBuilder(elem);
-            highlightElement(elem.getBoundingClientRect());
-            elemText = elem.innerText || elem.innerValue;`
+            try {
+              elem = document.elementFromPoint(${pointX}, ${pointY});
+              selector = cssPathBuilder(elem);
+              highlightElement(elem.getBoundingClientRect());
+              elemText = elem.innerText || elem.innerValue;
+              } catch(e){
+            }`
           break;
 
           case 'hover':
           case 'wait for element':
             execScript = `
-            elem = nodeResolver(document.elementFromPoint(${pointX}, ${pointY}));
-            highlightElement(elem.getBoundingClientRect());
-            cssPathBuilder(elem);`
+            try {
+              elem = document.elementFromPoint(${pointX}, ${pointY});
+              highlightElement(elem.getBoundingClientRect());
+              cssPathBuilder(elem);
+            } catch(e) {
+            }`
           break;
 
           default: console.log('Mode not recognized:', modes[this.currentMode]); return;
@@ -252,6 +246,9 @@ export default class SuperbotRecorder {
           if(chrome.runtime.lastError !== undefined){
             console.log('evaluateScript error:', chrome.runtime.lastError.message)
           }
+
+          //recorder sometimes records target indicator when spamming clicks
+          if(result.result.value === undefined || result.result.value.includes('superbot-target-indicator')) return;
 
           console.log('result:', result.result);
           switch(modes[this.currentMode]){

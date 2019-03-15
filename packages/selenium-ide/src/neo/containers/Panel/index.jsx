@@ -52,11 +52,11 @@ import { loadProject, saveProject, loadJSProject } from '../../IO/filesystem'
 import RemoveButton from '../../components/ActionButtons/Remove';
 
 let backendUrl = null;
-const prodUrl = 'http://localhost:3000';
-const stagingUrl = 'http://localhost:3000';
-/*
 const prodUrl = 'https://superbot.cloud';
 const stagingUrl = 'http://svc.vodka';
+/*
+const prodUrl = 'http://localhost:3000';
+const stagingUrl = 'http://localhost:3000';
 */
 
 if (!isTest) {
@@ -274,16 +274,13 @@ export default class Panel extends React.Component {
     }
   }
   createNewProject() {
-    this.setState({ showUploadWarning: true }, () => {
-      //const name = await ModalState.renameProject()
+    this.setState({ showUploadWarning: true }, () => { 
       const name = 'Untitled Test';
       const newProject = observable(new ProjectStore(name))
       createDefaultSuite(newProject, { suite: 'Default Suite', test: name })
-      loadJSProject(this.state.project, newProject.toJS())
+      loadJSProject(project, newProject.toJS())
       Logger.clearLogs()
       newProject.setModified(false)
-      //UiState.startRecording(false)
-      console.log('current project:', this.state.project)
       UiState.selectTest(this.state.project._tests[0], this.state.project._suites[0]);
     })
   }
