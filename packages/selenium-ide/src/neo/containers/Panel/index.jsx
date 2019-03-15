@@ -49,6 +49,15 @@ import Logger from '../../stores/view/Logs'
 import LoginPage from '../../components/LoginPage'
 
 import { loadProject, saveProject, loadJSProject } from '../../IO/filesystem'
+import RemoveButton from '../../components/ActionButtons/Remove';
+
+let backendUrl = null;
+const prodUrl = 'http://localhost:3000';
+const stagingUrl = 'http://localhost:3000';
+/*
+const prodUrl = 'https://superbot.cloud';
+const stagingUrl = 'http://svc.vodka';
+*/
 
 if (!isTest) {
   const api = require('../../../api')
@@ -294,13 +303,29 @@ export default class Panel extends React.Component {
         console.log('login creds', creds)
         this.setState({ user: creds }, () => {
           this.loadNewProject();
+          this.getOrganizations();
           resolve();
         });
       }).catch(e => console.log(e))
     })
   }
 
-
+  getOrganizations = () => {
+    fetch(`${backendUrl}/api/v1/organizations`, {
+      method: 'GET',
+      headers: {
+        'Authorization': this.getAuthorizationToken()
+      }
+    }).then(res => {
+      if(res.status === 200){
+        return res.json();
+      } else {
+        return Promise.reject('Failed to fetch organizations');
+      }
+    }).then(res => {
+      this.setState({ user: {...this.state.user, allOrganizations: {...res} }});
+    })
+  }
 
   getAuthorizationToken = () => `Basic ${new Buffer(this.state.user.username + ':' + this.state.user.token).toString('base64')}`
 
@@ -417,8 +442,27 @@ export default class Panel extends React.Component {
     }
   }
 
+  disableUploadWarning = () => {
+    this.setState({ showUploadWarning: false })
+  }
+
   componentWillMount(){
-    await this.handleLogin();
+    const stagingEnabled = (localStorage.getItem('stagingEnabled') === 'true');
+    backendUrl = stagingEnabled ? stagingUrl : prodUrl;
+    chrome.runtime.onMessage.addListener(this.extensionLoadTest);
+    this.setState({ stagingEnabled }, () => {
+      this.handleLogin();
+    });
+
+    window.addEventListener('keypress', (event) => {
+      if(event.key === '§'){
+        backendUrl = !this.state.stagingEnabled ? stagingUrl : prodUrl;
+        this.setState({ user: null, stagingEnabled: !this.state.stagingEnabled, showStagingNotification: !this.state.stagingEnabled }, async () => {
+          localStorage.setItem('stagingEnabled', !stagingEnabled ? 'true' : 'false');
+          await this.handleLogin();
+        });
+      }
+    })
   }
 
   componentWillUnmount() {
@@ -428,16 +472,48 @@ export default class Panel extends React.Component {
       window.removeEventListener('beforeunload', this.quitHandler)
     }
   }
+  
   render() {
     if(this.state.user === null){
       return (
         <LoginPage
           handleLogin={this.handleLogin}
+          backendUrl={backendUrl}
         />
       )
     }
     return (
       <div className="container" onKeyDown={this.handleKeyDownAlt.bind(this)}>
+        {this.state.stagingEnabled ? (
+          <div 
+            className='staging-notifier'
+            style={{
+              backgroundColor: '#40a6ff',
+              color: '#fff',
+              padding: '2px',
+              textAlign: 'center',
+              display: this.state.showStagingNotification ? 'block' : 'none'
+            }}
+          >
+            <p 
+              style={{ 
+                padding: '2px',
+                margin: '0px',
+                display: 'inline-block'
+              }}
+            >using staging back-end</p>
+            <RemoveButton
+              onClick={() => this.setState({ showStagingNotification: false })}
+              style={{
+                float: 'right',
+                fontSize: '18px',
+                color: '#fff',
+                height: '18px',
+                fontWeight: 'bold'
+              }}
+            />
+          </div>
+        ) : null}
         <SuiteDropzone
           loadProject={loadProject.bind(undefined, this.state.project)}
         >
@@ -455,6 +531,7 @@ export default class Panel extends React.Component {
               save={this.uploadTest}
               new={this.loadNewProject.bind(this)}
               clearAllCommands={UiState.displayedTest.clearAllCommands}
+              disableUploadWarning={this.disableUploadWarning}
             />
             <Console
               url={this.state.project.url}
