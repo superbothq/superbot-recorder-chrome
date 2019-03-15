@@ -1,6 +1,6 @@
 .console {
   font-size: 12px;
-  height: 100vh;
+  /*height: 100vh;*/
 }
 
 .viewport {
@@ -8,5 +8,6 @@
   font-size: 12px;
   overflow-y: hidden;
   overflow-x: hidden;
-  height: 100vh;
+  /*TODO: figure out fix to this*/
+  height: 91vh;
 }

@@ -66,6 +66,7 @@ export default class Console extends React.Component {
       this.tabChangedHandler('Recorded Steps')
     }
     if(prevProps.isPlaying === false && this.props.isPlaying === true){
+      output.clear()
       this.tabChangedHandler('Playback Log')
     }
   }

@@ -32,9 +32,10 @@ import SaveButton from '../ActionButtons/Save'
 import GaugeMenu from '../GaugeMenu'
 import SpeedGauge from '../ActionButtons/SpeedGauge'
 import PlayCurrent from '../ActionButtons/PlayCurrent'
-import Record from '../ActionButtons/Record'
+//import Record from '../ActionButtons/Record'
 import BetterRecord from '../ActionButtons/BetterRecord'
 import Clear from '../ActionButtons/Clear'
+import LogoutButton from '../ActionButtons/Logout'
 
 import './style.css'
 
@@ -54,10 +55,11 @@ export default class ProjectHeader extends React.Component {
     save: PropTypes.func,
     new: PropTypes.func,
   }
-  playAll() {
+  playAll = () => {
     const isInSuiteView = UiState.selectedView === 'Test suites'
 
     if (PlaybackState.canPlaySuite) {
+      this.props.disableUploadWarning();
       PlaybackState.playSuiteOrResume()
     } else if (isInSuiteView) {
       ModalState.showAlert({
@@ -66,6 +68,7 @@ export default class ProjectHeader extends React.Component {
           'To play a suite you must select a test case from within that suite.',
       })
     } else {
+      this.props.disableUploadWarning();
       PlaybackState.playFilteredTestsOrResume()
     }
   }
@@ -102,17 +105,6 @@ export default class ProjectHeader extends React.Component {
             disabled={PlaybackState.isPlaying || !UiState.selectedTest.test}
             isRecording={UiState.isSuperbotRecording}
             onClick={UiState.toggleSuperbotRecording}
-          />
-          <Record
-            disabled={PlaybackState.isPlaying || !UiState.selectedTest.test}
-            isRecording={UiState.isRecording}
-            onClick={UiState.toggleRecord}
-            style={{
-              padding: 0,
-              margin: 0,
-              width: 'initial',
-              height: 'initial'
-            }}
           />
           <div
             className='button-separator'
@@ -189,6 +181,16 @@ export default class ProjectHeader extends React.Component {
               height: 'initial'
             }}
           />
+          {/*
+          <LogoutButton
+            onClick={this.props.logout}
+            style={{
+              color: '#656565',
+              fontSize: '20px',
+              marginLeft: '7px'
+            }}
+          />
+          */}
         </span>
       </div>
     )
