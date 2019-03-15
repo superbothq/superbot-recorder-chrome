@@ -21,7 +21,7 @@ class LoginPage extends Component {
         <br/>
 
         <a
-          href='https://superbot.cloud/login'
+          href={`${this.props.backendUrl}/login`}
           target='_blank'
         >
           <button onClick={this.waitForLogin}>
@@ -32,7 +32,7 @@ class LoginPage extends Component {
         <p>
           Don't have an account?
           <a
-            href='https://superbot.cloud/signup'
+            href={`${this.props.backendUrl}/signup`}
             target='_blank'
             onClick={this.waitForLogin}
           >

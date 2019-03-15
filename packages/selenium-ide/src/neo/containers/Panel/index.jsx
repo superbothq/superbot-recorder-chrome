@@ -442,6 +442,33 @@ export default class Panel extends React.Component {
     }
   }
 
+  logoutUser = () => {
+    if(!confirm('Are you sure you want to logout?')) return;
+
+    let organizationId = null;
+    for(const key of Object.keys(this.state.user.allOrganizations)){
+      if(this.state.user.organization === this.state.user.allOrganizations[key].name){
+        organizationId = this.state.user.allOrganizations[key].id;
+      }
+    }
+    if(organizationId === null){
+      return alert('Error logging out: could not find organization id!');
+    }
+
+    fetch(`${backendUrl}/logout`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': this.getAuthorizationToken()
+      }
+    }).then(res => {
+      if(res.status === 302){
+        this.setState({ project: null, user: null, stagingEnabled: false, showStagingNotification: true, showUploadWarning: true });
+      } else {
+        console.log('Logging out failed, status:', res.status)
+      }
+    })
+  }
+
   disableUploadWarning = () => {
     this.setState({ showUploadWarning: false })
   }
@@ -530,6 +557,7 @@ export default class Panel extends React.Component {
               //save={() => saveProject(this.state.project)}
               save={this.uploadTest}
               new={this.loadNewProject.bind(this)}
+              logout={this.logoutUser}
               clearAllCommands={UiState.displayedTest.clearAllCommands}
               disableUploadWarning={this.disableUploadWarning}
             />
