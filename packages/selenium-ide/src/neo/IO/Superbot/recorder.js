@@ -1,8 +1,9 @@
 import UiState from '../../stores/view/UiState'
 import { Commands, ArgTypes } from '../../models/Command'
 import { elemHighlight } from './elementHighlight'
-/*
-const cssPathBuilder = `
+
+//MASSIVE TODO: clean this mess up
+const helpers = `
   const cssPathBuilder = (el) => {
     if (!(el instanceof Element)){
       return;
@@ -28,10 +29,10 @@ const cssPathBuilder = `
     }
     return path.join(" > ");
   }
-`
-*/
-const nodeResolver = `
+
   const nodeResolver = (el) => {
+    if(el === null) return;
+
     //return first matching targeted element
     if(typeof el.click === 'function'){
       return el
@@ -44,56 +45,83 @@ const nodeResolver = `
       return pNode
     }
   }
-`
+
+  const highlightElement = (coords) => {
+    if(window.self !== window.top) return;
+    const targetIndicator = window.document.createElement('div');
+    targetIndicator.id = 'superbot-target-indicator';
+    targetIndicator.style.position = 'absolute';
+    targetIndicator.style.top = coords.y + 'px';
+    targetIndicator.style.left = coords.x + 'px';
+    targetIndicator.style.width = coords.width + 'px';
+    targetIndicator.style.height = coords.height + 'px';
+    targetIndicator.style.backgroundColor = '#77dd777F';
+    targetIndicator.style.display = 'block';
+    window.document.body.appendChild(targetIndicator);
+    setTimeout(() => {
+      targetIndicator.remove();
+    }, 150);
+  }`
+
+//TODO: remove this duplicate mode list, content script recorder already has one
+const modes = ['recording', 'hover', 'assert text', 'wait for element']
 
 export default class SuperbotRecorder {
   constructor(){
     this.currentWindow = null
     this.debugTarget = null
-    this.recordOpenStep = true
-    this.scripts = []
+    //TODO: do something with these
     this.mouseCoordinates = []
     this.currentMode = 0;
 
     chrome.runtime.onMessage.addListener(this.messageHandler)
     chrome.debugger.onEvent.addListener(this.debuggerCommandHandler)
     chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-      if(this.recordOpenStep && !tab.url.includes('chrome://') && !tab.url.includes('chrome-extension://')){
-        this.recordCommand('open', [[tab.url]], '')
+      if(!UiState.isSuperbotRecording || this.currentWindow === null || this.currentWindow.tabs[0].id !== tabId) return;
+
+      if(UiState.displayedTest.commands.length < 1 && !tab.url.includes('chrome://') && !tab.url.includes('chrome-extension://')){
+        recordCommand('open', [[tab.url]], '')
         this.attachDebugger()
-        this.recordOpenStep = false
+      }
+
+      if(this.debugTarget !== null){
+        runDebuggerScript(this.debugTarget, helpers, 'helpers')
       }
     })
   }
 
   createRecordingWindow = () => {
     return new Promise((resolve) => {
-      chrome.windows.create({ url: 'chrome://newtab/' }, (_window) => {
-        this.currentWindow = _window
+      chrome.windows.create({ url: 'chrome://newtab/' }, window => {
+        this.currentWindow = window
+        checkForErrors('createRecordingWindow');
         resolve()
       })
     })
   }
 
   removeRecordingWindow = () => {
-    try {
-      if(this.currentWindow === null){
-        return
-      }
-      chrome.windows.remove(this.currentWindow.id)
-    } catch(e) {
-      console.log('removeRecordingWindow error:', e)
-    }
+    if(this.currentWindow === null) return;
+
+    chrome.windows.remove(this.currentWindow.id, () => {
+      checkForErrors('removeRecordingWindow');
+    });
   }
 
   stateChecks = () => {
-    try {
-      const stateChecksInterval = setInterval(() => {
-        if(UiState.isSuperbotRecording === false){
-          this.stopRecording()
-          return clearInterval(stateChecksInterval);
-        }
-        chrome.tabs.query({ windowId: this.currentWindow.id }, (windowInfo) => {
+    const stateChecksInterval = setInterval(() => {
+      if(UiState.isSuperbotRecording === false){
+        this.stopRecording()
+        return clearInterval(stateChecksInterval);
+      }
+
+      if(this.currentWindow === null){
+        this.stopRecording()
+        UiState.toggleSuperbotRecording()
+        clearInterval(stateChecksInterval);
+      } else {
+        chrome.tabs.query({ windowId: this.currentWindow.id }, windowInfo => {
+          checkForErrors('stateChecks');
           if(windowInfo.length === 0){
             this.currentWindow = null
             this.stopRecording()
@@ -101,39 +129,40 @@ export default class SuperbotRecorder {
             clearInterval(stateChecksInterval);
           }
         })
-      }, 250)
-    } catch(e) {
-      console.log('stateChecks error:', e)
-    }
+      }
+    }, 250)
   }
 
   start = async () => {
-    try {
-      await this.createRecordingWindow()
-      this.stateChecks()
-      chrome.tabs.sendMessage(this.currentWindow.tabs[0].id, { type: 'attachSuperbotRecorder' })
-    } catch(e) {
-      console.log('Failed to attach recorder:', e)
-    }
+    await this.createRecordingWindow()
+    this.stateChecks()
+    chrome.tabs.sendMessage(this.currentWindow.tabs[0].id, { type: 'attachSuperbotRecorder' }, () => {
+      checkForErrors('start');
+    })
   }
 
   stopRecording = () => {
-    clearInterval(this.stateChecksInterval)
-    this.recordOpenStep = true
+    try {
+      clearInterval(this.stateCheckInterval);
+      this.removeRecordingWindow();
+      this.currentWindow = null;
+      this.debugTarget = null;
+      this.currentMode = 3;
+      recordCommand('close', [['']], '');
 
-    this.recordCommand('close', [['']], '')
-
-    chrome.debugger.detach(this.debugTarget, () => {
-      if(this.currentWindow !== null){
-        this.removeRecordingWindow()
-        this.currentWindow = null
-      }
-      if(chrome.runtime.lastError !== undefined)
-        console.log('runtime.lastError:', chrome.runtime.lastError)
-    })
-    this.debugTarget = null
+      //focus extension window
+      chrome.windows.getCurrent(window => {
+        chrome.tabs.getSelected(window.id, response => {
+          chrome.windows.update(response.windowId, { focused: true }, () => {
+            checkForErrors('stop recording focus window');
+          });
+        });
+      });
+      
+    } catch(e) {
+      console.log('stop recording:', e)
+    }
   }
-
 
   attachDebugger = () => {
     chrome.debugger.getTargets(targets => {
@@ -144,25 +173,12 @@ export default class SuperbotRecorder {
 
       if(!newTarget.attached){
         chrome.debugger.attach(this.debugTarget, '1.3', () => {
-          if(chrome.runtime.lastError !== undefined)
-            console.log('debugger attach error:', chrome.runtime.lastError) 
-        })
+          chrome.debugger.sendCommand(this.debugTarget, 'Runtime.enable', () => {
+            checkForErrors('attachDebugger');
+          });
+        });
       }
     })
-  }
-
-  recordCommand = (command, targets, value) => {
-    const test = UiState.displayedTest
-
-    const newCommand = test.createCommand(test.commands.length)
-    
-    newCommand.setCommand(command)
-    newCommand.setTarget(targets[0][0])
-    newCommand.setValue(value)
-
-    UiState.lastRecordedCommand = newCommand
-
-    return newCommand
   }
 
   messageHandler = (message, sender, sendResponse) => {
@@ -170,15 +186,11 @@ export default class SuperbotRecorder {
 
     switch(message.type){
       case 'command':
-        console.log('Command received:', message);
-        this.commandHandler(message.command, message.targets, message.value);      
-        sendResponse(true);
+        commandHandler(message.command, message.targets, message.value);      
       break;
 
       case 'setMode':
-        console.log('Set mode:', message);  
         this.currentMode = message.mode;
-        sendResponse(true);
       break;
 
       case 'getMode':
@@ -190,11 +202,10 @@ export default class SuperbotRecorder {
       break;
 
       case 'debuggerCommand':
-        this.switchDebuggerHighlight(message.enabled);
+        switchDebuggerHighlight(this.debugTarget, message.enabled);
       break;
 
       case 'evaluateScripts':
-        console.log('Evaluate scripts request received:', message);
         chrome.tabs.sendMessage(this.currentWindow.tabs[0].id, { type: 'attachSuperbotRecorder' })
       break;
 
@@ -202,106 +213,133 @@ export default class SuperbotRecorder {
     }
   }
 
-  //handle recorded commands that are sent from content scripts
-  commandHandler = (command, targets, value) => {
-    console.log('Command recorded:', command, targets, value)
-
-    //prevent recoding commands before open-step is recorded
-    if(UiState.displayedTest.commands.length === 0){
-      return
-    }
-
-    const newCommand = this.recordCommand(command, targets, value)
-    if (Commands.list.has(command)) {
-      const type = Commands.list.get(command).target
-      if (type && type.name === ArgTypes.locator.name) {
-        newCommand.setTargets(targets)
-      }
-    }
-  }
-
-  switchDebuggerHighlight = (enabled = true) => {
-    if(enabled){
-      chrome.debugger.sendCommand(this.debugTarget, 'Overlay.setInspectMode', elemHighlight)
-      chrome.debugger.sendCommand(this.debugTarget, 'Overlay.enable')
-    } else {
-      chrome.debugger.sendCommand(this.debugTarget, 'Overlay.disable')
-    }
-  }
-  
-  //handle commands that are sent from debugger
   debuggerCommandHandler = (sender, method, params) => {
     if(method === 'Overlay.inspectNodeRequested'){
-      //prevent recoding commands before open-step is recorded
-      if(UiState.displayedTest.commands.length === 0){
-        return
-      }
-      chrome.debugger.sendCommand(this.debugTarget, 'DOM.getBoxModel', {
+      //Do not record commands before a valid base url is opened
+      if(UiState.displayedTest.commands.length === 0) return;
+
+        chrome.debugger.sendCommand(this.debugTarget, 'DOM.getBoxModel', {
         backendNodeId: params.backendNodeId
-      }, async (boxModelData) => {
+      }, boxModelData => {
         const pointX = boxModelData.model.content[0] + (boxModelData.model.width / 2)
         const pointY = boxModelData.model.content[1] + (boxModelData.model.height / 2)
-  
-        const action = await this.getElementAction();
-        let exec = null;
-        switch(action){
-          case 'click': 
-            exec = `
-              window.elem = nodeResolver(document.elementFromPoint(${pointX}, ${pointY}));
-              window.selector = cssPathBuilder(window.elem);
-              window.elem.click();
-              window.elem = null;
-              window.selector;
-            `;
+
+        let execScript = null;
+        switch(modes[this.currentMode]){
+          case 'assert text':
+            execScript = `
+            elem = nodeResolver(document.elementFromPoint(${pointX}, ${pointY}));
+            selector = cssPathBuilder(elem);
+            highlightElement(elem.getBoundingClientRect());
+            elemText = elem.innerText || elem.innerValue;`
           break;
 
-          case 'doubleClick':
-            exec = `
-              window.elem = nodeResolver(document.elementFromPoint(${pointX}, ${pointY}));
-              window.selector = cssPathBuilder(window.elem);
-              window.elem.click();
-              window.elem.click();
-              window.elem = null;
-              window.selector;
-            `;
+          case 'hover':
+          case 'wait for element':
+            execScript = `
+            elem = nodeResolver(document.elementFromPoint(${pointX}, ${pointY}));
+            highlightElement(elem.getBoundingClientRect());
+            cssPathBuilder(elem);`
           break;
 
-          case 'waitForElementPresent':
-            exec = `cssPathBuilder(nodeResolver(document.elementFromPoint(${pointX}, ${pointY})));`;
-          break;
-
-          case 'verifyText':
-            exec = `
-              window.elem = nodeResolver(document.elementFromPoint(${pointX}, ${pointY}));
-              window.selector = cssPathBuilder(window.elem);
-              window.text = window.elem.innerText;
-              window.elem = null;
-              JSON.stringify({ selector: window.selector, text: window.text })
-            `;
-          break;
-
-          case 'cancel':
-            return;
-          break;
-
-          default: return console.log('Action not recognized:', action); break;
+          default: console.log('Mode not recognized:', modes[this.currentMode]); return;
         }
-        
-        //passthrough users click and get element selector
+
         chrome.debugger.sendCommand(this.debugTarget, 'Runtime.evaluate', {
-          expression: exec,
+          expression: execScript,
           includeCommandLineAPI: true
         }, result => {
-          if(action === 'verifyText'){
-            const res = JSON.parse(result.result.value)
-            this.recordCommand(action, [['css=' + res.selector]], res.text)
-          } else if(action === 'waitForElementPresent'){
-            this.recordCommand(action, [['css=' + result.result.value]], '7')
-          } else {
-            this.recordCommand(action, [['css=' + result.result.value]], '')
+          if(chrome.runtime.lastError !== undefined){
+            console.log('evaluateScript error:', chrome.runtime.lastError.message)
+          }
+
+          console.log('result:', result.result);
+          switch(modes[this.currentMode]){
+            case 'assert text':
+              recordCommand('assertText', [['css=body']], result.result.value)
+            break;
+
+            case 'hover':
+              recordCommand('mouseOver', [['css=' + result.result.value]], '');
+              recordCommand('mouseOut', [['css=' + result.result.value]], '');
+            break;
+
+            case 'wait for element':
+              recordCommand('waitForElementPresent', [['css=' + result.result.value]], '7')
+            break;
+
+            default: console.log('mode not recognized:', modes[this.currentMode]); return;
           }
         })
       })
     }
+  }
+}
+
+const recordCommand = (command, targets, value) => {
+  const test = UiState.displayedTest
+
+  const newCommand = test.createCommand(test.commands.length)
+  
+  newCommand.setCommand(command)
+  newCommand.setTarget(targets[0][0])
+  newCommand.setValue(value)
+
+  UiState.lastRecordedCommand = newCommand
+
+  return newCommand
+}
+
+//handle recorded commands that are sent from content scripts
+const commandHandler = (command, targets, value) => {
+  console.log('Command recorded:', command, targets, value)
+
+  //Do not record commands before a valid base url is opened
+  if(UiState.displayedTest.commands.length === 0) return;
+
+  const newCommand = recordCommand(command, targets, value)
+  if (Commands.list.has(command)) {
+    const type = Commands.list.get(command).target
+    if (type && type.name === ArgTypes.locator.name) {
+      newCommand.setTargets(targets)
+    }
+  }
+}
+
+const switchDebuggerHighlight = (debugTarget, enabled) => {
+  if(enabled){
+    chrome.debugger.sendCommand(debugTarget, 'Overlay.setInspectMode', elemHighlight)
+    chrome.debugger.sendCommand(debugTarget, 'Overlay.enable')
+    checkForErrors('Enable debugger highlight');
+  } else {
+    chrome.debugger.sendCommand(debugTarget, 'Overlay.disable')
+    checkForErrors('Disabled debugger highlight');
+  }
+}
+
+const runDebuggerScript = (debugTarget, script, name) => {
+  return new Promise(resolve => {
+    chrome.debugger.sendCommand(debugTarget, 'Runtime.compileScript', {
+      expression: script,
+      sourceURL: name,
+      persistScript: true
+    }, script => {
+      if(script === undefined){
+        console.log('Error compiled script undefined:', script)
+        return;
+      }
+      chrome.debugger.sendCommand(debugTarget, 'Runtime.runScript', {
+        scriptId: script.scriptId
+      }, () => {
+        chrome.runtime.lastError;
+        resolve();        
+      })
+    })
+  })
+}
+
+const checkForErrors = (source) => {
+  if(chrome.runtime.lastError !== undefined){
+    console.log(`runtime.lastError(${source}): ${chrome.runtime.lastError.message}`);
   }
 }
