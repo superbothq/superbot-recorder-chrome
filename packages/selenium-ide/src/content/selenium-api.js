@@ -474,7 +474,7 @@ Selenium.prototype.findElementVisible = function(locator) {
 Selenium.prototype.doAssertText = function(locator, value) {
   const element = this.findElementVisible(locator)
   const visibleText = bot.dom.getVisibleText(element)
-  if (visibleText !== value) {
+  if (!visibleText.includes(value)) {
     throw new Error(`Actual value "${visibleText}" did not match "${value}"`)
   }
 }
