@@ -21,8 +21,8 @@ import { observable } from 'mobx'
 import { observer } from 'mobx-react'
 import { DragDropContext } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
-import SplitPane from 'react-split-pane'
-import classNames from 'classnames'
+//import SplitPane from 'react-split-pane'
+//import classNames from 'classnames'
 import { modifier } from 'modifier-keys'
 import Tooltip from '../../components/Tooltip'
 import storage from '../../IO/storage'
@@ -31,8 +31,8 @@ import seed from '../../stores/seed'
 import SuiteDropzone from '../../components/SuiteDropzone'
 import PauseBanner from '../../components/PauseBanner'
 import ProjectHeader from '../../components/ProjectHeader'
-import Navigation from '../Navigation'
-import Editor from '../Editor'
+//import Navigation from '../Navigation'
+//import Editor from '../Editor'
 import Console from '../Console'
 import Modal from '../Modal'
 import Changelog from '../../components/Changelog'
@@ -110,7 +110,7 @@ if (browser.windows) {
 export default class Panel extends React.Component {
   constructor(props) {
     super(props)
-    this.state = { project, user: null }
+    this.state = { project, user: null, stagingEnabled: false,  showStagingNotification: true, showUploadWarning: true }
     this.parseKeyDown = this.parseKeyDown.bind(this)
     this.keyDownHandler = window.document.body.onkeydown = this.handleKeyDown.bind(
       this
@@ -264,22 +264,25 @@ export default class Panel extends React.Component {
       this.createNewProject()
     }
   }
-  async createNewProject() {
-    //const name = await ModalState.renameProject()
-    const name = 'Untitled Test';
-    const newProject = observable(new ProjectStore(name))
-    createDefaultSuite(newProject, { suite: 'Default Suite', test: name })
-    loadJSProject(this.state.project, newProject.toJS())
-    Logger.clearLogs()
-    newProject.setModified(false)
-    //UiState.startRecording(false)
+  createNewProject() {
+    this.setState({ showUploadWarning: true }, () => {
+      //const name = await ModalState.renameProject()
+      const name = 'Untitled Test';
+      const newProject = observable(new ProjectStore(name))
+      createDefaultSuite(newProject, { suite: 'Default Suite', test: name })
+      loadJSProject(this.state.project, newProject.toJS())
+      Logger.clearLogs()
+      newProject.setModified(false)
+      //UiState.startRecording(false)
+      console.log('current project:', this.state.project)
+      UiState.selectTest(this.state.project._tests[0], this.state.project._suites[0]);
+    })
   }
 
   handleLogin = () => {
     return new Promise(resolve => {
-      fetch('https://superbot.cloud/login/cloud/credentials.json')
+      fetch(`${backendUrl}/login/cloud/credentials.json`)
       .then(res => {
-        console.log(res)
         if(res.status === 200 && res.redirected === false){
           return res.json()
         } else if (res.status === 200 && res.redirected === true){
@@ -290,21 +293,23 @@ export default class Panel extends React.Component {
       }).then(creds => {
         console.log('login creds', creds)
         this.setState({ user: creds }, () => {
-          this.loadNewProject()
+          this.loadNewProject();
           resolve();
         });
       }).catch(e => console.log(e))
     })
   }
 
-  getAuthorizationToken = () => new Buffer(this.state.user.username + ':' + this.state.user.token).toString('base64');
 
-  getTest = (id) => {
+
+  getAuthorizationToken = () => `Basic ${new Buffer(this.state.user.username + ':' + this.state.user.token).toString('base64')}`
+
+  filterOpenedTest = (id) => {
     return new Promise(resolve => {
-      fetch('https://superbot.cloud/api/v1/tests', {
+      fetch(`${backendUrl}/api/v1/tests?organization_name=${this.state.user.organization}`, {
         method: 'GET',
         headers: {
-          'Authorization': 'Basic ' + this.getAuthorizationToken()
+          'Authorization': this.getAuthorizationToken()
         }
       }).then(res => {
         if(res.status === 200){
@@ -313,7 +318,6 @@ export default class Panel extends React.Component {
           return Promise.reject('Failed to fetch tests!');
         }
       }).then(res => {
-        //For each file in each test
         for(let i = 0; i < res.tests.length; i++){
           for(let x = 0; x < res.tests[i].files.length; x++){
             if(res.tests[i].files[x].id === id){
@@ -327,36 +331,57 @@ export default class Panel extends React.Component {
   }
 
   uploadTest = async () => {
-    let projectName = this.state.project.name;
-    projectName = projectName === null || projectName === 'Untitled Test' ? await ModalState.renameProject() : projectName;
-    const suite = {
-      name: projectName,
-      organization: this.state.user.username,
-      description: '',
-      files: [{ content: project.toJS() }]
+    if(this.state.showUploadWarning){
+      const playTest = await ModalState.showAlert({
+        title: 'You have not ran your test yet',
+        description: '...and you probably should before uploading it to the cloud. Do it now?',
+        cancelLabel: 'No',
+        confirmLabel: 'Yes',
+      });
+      this.setState({ showUploadWarning: false });
+      if(playTest){
+        if (PlaybackState.canPlaySuite) {
+          PlaybackState.playSuiteOrResume()
+        } else {
+          PlaybackState.playFilteredTestsOrResume()
+        }
+        return;
+      }
     }
 
-    console.log('user', this.state.user)
-    console.log('suite', suite)
-    console.log('uistate selected test:', UiState.selectedTest)
+    if(this.state.project.name === null || this.state.project.name === 'Untitled Test'){
+      const newName = await ModalState.renameProject('test case', this.state.project.name, { isNewTest: false });
+      await new Promise(resolve => {
+        const newProject = {...this.state.project};
+        newProject.name = newName;
+        this.setState({ project: newProject }, () => {
+          resolve();
+        });
+      })
+    }
+
+    const suite = {
+      name: this.state.project.name,
+      organization_name: this.state.user.organization,
+      description: '',
+      files: [{ content: this.state.project.toJS() }]
+    }
 
     let formData = new FormData()
-
     for (let key in suite){
       if(key !== 'files'){
         formData.append(key, suite[key])
       }
     }
-
     for(let i = 0; i < suite.files.length; i++){
       formData.append('files[]', new Blob([JSON.stringify(suite.files[i].content)]), this.state.project.name)
     }
 
-    fetch('https://superbot.cloud/api/v1/tests', {
+    fetch(`${backendUrl}/api/v1/tests`, {
       method: 'POST',
       body: formData,
       headers: {
-        'Authorization': 'Basic ' + this.getAuthorizationToken()
+        'Authorization': this.getAuthorizationToken()
       }
     }).then(res => {
       if(res.status === 200){
@@ -371,7 +396,6 @@ export default class Panel extends React.Component {
     .catch(e => console.log(e))
   }
 
-  
   extensionLoadTest = async (message) => {
     if(message.type !== 'extensionLoadTest') return;
 
@@ -379,11 +403,13 @@ export default class Panel extends React.Component {
       if(this.state.user === null){
         await this.handleLogin();
       }
-      const test = await this.getTest(message.testId);
+      const test = await this.filterOpenedTest(message.testId);
       const newProject = observable(new ProjectStore(''))
       newProject.fromJS(JSON.parse(test.content));
-      this.setState({ project: newProject }, () => {
-        loadJSProject(this.state.project, this.state.project);
+      newProject.setModified(false);
+      Logger.clearLogs()
+      this.setState({ project: newProject, showUploadWarning: false }, () => {
+        loadJSProject(this.state.project, newProject.toJS());
         UiState.selectTest(this.state.project._tests[0], this.state.project._suites[0]);
       });
     } catch(e){
@@ -391,17 +417,8 @@ export default class Panel extends React.Component {
     }
   }
 
-  async componentWillMount(){
-    chrome.runtime.onMessage.addListener(this.extensionLoadTest);
+  componentWillMount(){
     await this.handleLogin();
-    /*
-    window.addEventListener('keypress', (event) => {
-      console.log('keypress event', event)
-      if(event.key === '§'){
-        this.setState({ activeView: this.state.activeView === 'simple' ? 'advanced' : 'simple' })
-      }
-    })
-    */
   }
 
   componentWillUnmount() {
@@ -443,7 +460,7 @@ export default class Panel extends React.Component {
               url={this.state.project.url}
               urls={this.state.project.urls}
               setUrl={this.state.project.setUrl}
-              test={this.state.project.tests[0]}
+              test={this.state.project._tests[0]}
               callstackIndex={UiState.selectedTest.stack}
               isRecording={UiState.isRecording}
               isPlaying={PlaybackState.isPlaying}
