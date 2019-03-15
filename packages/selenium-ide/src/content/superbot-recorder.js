@@ -1,81 +1,23 @@
-import { addRecordingIndicator } from './recordingIndicator'
+import addModeIndicator from './modeIndicator'
 import cssPathBuilder from './cssPathBuilder'
 
 chrome.runtime.sendMessage({ type: 'evaluateScripts' })
 
-const EventHandlers = []
 let attached = false
+const EventHandlers = []
 
-//Mode Indicator
-const modes = ['click', 'verify text', 'wait for element']
-let currentMode = 0;
-const maxMode = modes.length-1;
+let currentModeIndex = 0;
+const modes = ['recording', 'hover', 'assert text', 'wait for element']
 
-const messageHandler = (message, sender, sendResponse) => {
+const messageHandler = message => {
   if(message.type === 'attachSuperbotRecorder' && !attached){
-    addRecordingIndicator();
-    chrome.runtime.sendMessage({ type: 'getMode' }, (res) => {
-      if(res !== 0){
-        currentMode = res;
-      }
-      addModeIndicator();
+    chrome.runtime.sendMessage({ type: 'getMode' }, savedModeIndex => {
+      currentModeIndex = savedModeIndex;
+      addModeIndicator(modes[currentModeIndex]);
     });
     attachEventHandlers();
     attached = true;
-    sendResponse(attached);
   }
-}
-const addModeIndicator = () => {
-  if(window.self !== window.top) return;
-
-  const modeIndicator = window.document.createElement('div');
-  modeIndicator.id = 'superbot-mode-indicator';
-  modeIndicator.innerText = 'Current mode: ' + modes[currentMode];
-  modeIndicator.style.color = '#333';
-  //modeIndicator.style.backgroundColor = '#fff';
-  modeIndicator.style.fontSize = '16px';
-  modeIndicator.style.fontFamily = 'Arial, Helvetica, sans-serif';
-  modeIndicator.style.fontWeight = 'bold';
-  modeIndicator.style.width = '277px';
-  modeIndicator.style.padding = '5px';
-  modeIndicator.style.textAlign = 'center';
-  modeIndicator.style.zIndex = 2147483647;
-  modeIndicator.style.position = 'fixed';
-  //modeIndicator.style.top = '0px';
-  modeIndicator.style.bottom = '40px';
-  modeIndicator.style.right = '40px';
-  modeIndicator.style.border = 'none';
-  modeIndicator.style.margin = 'initial';
-  modeIndicator.style.backgroundColor = 'initial';
-  modeIndicator.style.borderRadius = 'initial';
-  //modeIndicator.style.boxShadow = 'rgba(0, 0, 0, 0.3) 4px 4px 3px -2px';
-  document.getElementById('selenium-ide-indicator').addEventListener(
-    'mouseenter',() => {
-      modeIndicator.style.visibility = 'hidden'
-      setTimeout(function() {
-        modeIndicator.style.visibility = 'visible'
-      }, 1000)
-    },
-    false
-  )
-  window.document.body.appendChild(modeIndicator);
-}
-
-const highlightElement = (elem) => {
-  if(window.self !== window.top) return;
-
-  elem.style.border = '10px solid green';
-  setTimeout(() => {
-    elem.style.border = 'initial';
-  }, 150)
-
-}
-
-const addEventHandler = (type, handler) => {
-  EventHandlers.push({
-    type: type,
-    handler: handler
-  })
 }
 
 const recordCommand = (command, targets, value) => {
@@ -84,6 +26,40 @@ const recordCommand = (command, targets, value) => {
     command: command,
     targets: targets,
     value: value
+  })
+}
+
+const highlightElement = (coords) => {
+  if(window.self !== window.top) return;
+  const targetIndicator = window.document.createElement('div');
+  targetIndicator.id = 'superbot-target-indicator';
+  targetIndicator.style.position = 'absolute';
+  targetIndicator.style.top = `${coords.y}px`;
+  targetIndicator.style.left = `${coords.x}px`;
+  targetIndicator.style.width = `${coords.width}px`;
+  targetIndicator.style.height = `${coords.height}px`;
+  targetIndicator.style.backgroundColor = '#77dd777F';
+  targetIndicator.style.display = 'block';
+  window.document.body.appendChild(targetIndicator);
+  setTimeout(() => {
+    targetIndicator.remove();
+  }, 150);
+}
+
+const advanceCurrentMode = (targetMode = null) => {
+  const elem = document.getElementById('superbot-mode-indicator').children[1];
+  if(targetMode !== null){
+    currentModeIndex = modes.findIndex(currentMode => currentMode === targetMode);
+  } else {
+    currentModeIndex = currentModeIndex + 1 <= modes.length-1 ? currentModeIndex + 1 : 0
+  }
+  elem.innerText = 'Current mode: ' + modes[currentModeIndex];
+}
+
+const addEventHandler = (type, handler) => {
+  EventHandlers.push({
+    type: type,
+    handler: handler
   })
 }
 
@@ -100,33 +76,40 @@ const attachEventHandlers = () => {
   })
 
   addEventHandler('click', event => {
-    highlightElement(event.target);
-    if(modes[currentMode] === 'click'){
-      recordCommand(modes[currentMode], [['css=' + cssPathBuilder(event.target)]], '');
-    } else {
+    if(modes[currentModeIndex] !== 'recording'){
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      const command = modes[currentMode] === 'verify text' ? 'verifyText' : 'waitForElementPresent';
-      const value = modes[currentMode] === 'verify text' ? (event.target.value || event.target.innerText) : '7000';
-      recordCommand(command, [['css=' + cssPathBuilder(event.target)]], value);
     }
+    const coords = event.target.getBoundingClientRect();
+    highlightElement(coords);
+    recordCommand('click', [['css=' + cssPathBuilder(event.target)]], '');
+    advanceCurrentMode('wait for element');
+    chrome.runtime.sendMessage({ type: 'setMode', mode: currentModeIndex });
+    chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: true })
   })
   
   addEventHandler('mousemove', event => {
+    if(modes[currentModeIndex !== 'recording']) return;
+
     chrome.runtime.sendMessage({ type: 'updateMousePos', coordinates: { x: event.clientX, y: event.clientY, time: new Date().getTime() }})
   })
 
   addEventHandler('keydown', event => {
-    if(event.target.tagName.toLowerCase() !== 'input' && event.keyCode === 32){
+    if(event.target.tagName.toLowerCase() === 'input' || event.keyCode !== 32) return;
+
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      const elem = document.getElementById('superbot-mode-indicator');
-      currentMode = currentMode + 1 <= maxMode ? currentMode + 1 : 0
-      elem.innerText = 'Current mode: ' + modes[currentMode];
-      chrome.runtime.sendMessage({ type: 'setMode', mode: currentMode });
-    }
+
+      advanceCurrentMode();
+      chrome.runtime.sendMessage({ type: 'setMode', mode: currentModeIndex });
+      
+      if(modes[currentModeIndex] === 'recording'){
+        chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: false })
+      } else {
+        chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: true })
+      }
   })
 
   for(let i = 0; i < EventHandlers.length; i++){
