@@ -6,57 +6,85 @@ chrome.runtime.sendMessage({ type: 'evaluateScripts' })
 let attached = false
 const EventHandlers = []
 
-let currentModeIndex = 0;
+let currentMode = null;
 const modes = ['recording', 'hover', 'assert text', 'wait for element']
 
-const messageHandler = message => {
+const messageHandler = (message, sender, sendResponse) => {
   if(message.type === 'attachSuperbotRecorder' && !attached){
-    chrome.runtime.sendMessage({ type: 'getMode' }, savedModeIndex => {
-      currentModeIndex = savedModeIndex;
-      if(currentModeIndex !== 0){
+    chrome.runtime.sendMessage({ type: 'getMode' }, savedMode => {
+      currentMode = savedMode;
+      if(currentMode !== 'recording'){
         chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: true })
       }
-      addModeIndicator(modes[currentModeIndex]);
+      addModeIndicator(currentMode);
     });
     attachEventHandlers();
     attached = true;
+  } else if(message.type === 'toggleRecordingIndicator'){
+    try {
+      if(message.enabled){
+        addModeIndicator(currentMode);
+      } else {
+        const modeIndicator = document.getElementById('superbot-mode-indicator');
+        if(modeIndicator !== null){
+          modeIndicator.remove();
+        }
+        sendResponse(true)
+      }
+    } catch(e) {
+      console.log(e)
+    }
+  } else if(message.type === 'updateMode'){
+    try { 
+      currentMode = message.mode
+      const modeIndicator = document.getElementById('superbot-mode-indicator');
+      if(modeIndicator !== null){
+        modeIndicator.contentDocument.body.children[1].innerText = `Current mode: ${currentMode}`;
+      } else {
+        console.log('modeIndicator null!', modeIndicator)
+      }
+      if(currentMode === 'recording'){
+        chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: false })
+      }
+    } catch(e) {
+      console.log(e)
+    }
   }
 }
 
-const recordCommand = (command, targets, value) => {
+const recordCommand = (command, targets, value, coords) => {
   chrome.runtime.sendMessage({
     type: 'command',
     command: command,
     targets: targets,
-    value: value
+    value: value,
+    coords: coords
   })
 }
 
-const highlightElement = (coords) => {
-  if(window.self !== window.top) return;
-  const targetIndicator = window.document.createElement('div');
-  targetIndicator.id = 'superbot-target-indicator';
-  targetIndicator.style.position = 'absolute';
-  targetIndicator.style.top = `${coords.y}px`;
-  targetIndicator.style.left = `${coords.x}px`;
-  targetIndicator.style.width = `${coords.width}px`;
-  targetIndicator.style.height = `${coords.height}px`;
-  targetIndicator.style.backgroundColor = '#77dd777F';
-  targetIndicator.style.display = 'block';
-  window.document.body.appendChild(targetIndicator);
-  setTimeout(() => {
-    targetIndicator.remove();
-  }, 100);
-}
-
 const advanceCurrentMode = (targetMode = null) => {
-  const elem = document.getElementById('superbot-mode-indicator').children[1];
-  if(targetMode !== null){
-    currentModeIndex = modes.findIndex(currentMode => currentMode === targetMode);
-  } else {
-    currentModeIndex = currentModeIndex + 1 <= modes.length-1 ? currentModeIndex + 1 : 0
+  try {
+    const modeIndicator = document.getElementById('superbot-mode-indicator');
+    if(targetMode !== null){
+      currentMode = targetMode;
+    } else {
+      const index = modes.findIndex(m => m === currentMode);
+      if(index + 1 > modes.length - 1){
+        currentMode = modes[0];
+      } else {
+        currentMode = modes[index + 1];
+      }
+    }
+    modeIndicator.contentDocument.body.children[1].innerText = 'Current mode: ' + currentMode;
+    chrome.runtime.sendMessage({ type: 'setMode', mode: currentMode });
+    if(currentMode === 'recording'){
+      chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: false })
+    } else {
+      chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: true })
+    }
+  } catch(e){
+    console.log(e)
   }
-  elem.innerText = 'Current mode: ' + modes[currentModeIndex];
 }
 
 const addEventHandler = (type, handler) => {
@@ -79,41 +107,33 @@ const attachEventHandlers = () => {
   })
 
   addEventHandler('click', event => {
-    if(modes[currentModeIndex] !== 'recording'){
+    if(currentMode !== 'recording'){
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
       return;
     }
     const coords = event.target.getBoundingClientRect();
-    highlightElement(coords);
-    recordCommand('click', [['css=' + cssPathBuilder(event.target)]], '');
+    if(coords.width === 0 || coords.height === 0) return;
+
+    recordCommand('click', [['css=' + cssPathBuilder(event.target)]], '', coords);
     advanceCurrentMode('wait for element');
-    chrome.runtime.sendMessage({ type: 'setMode', mode: currentModeIndex });
-    chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: true })
   })
   
   addEventHandler('mousemove', event => {
-    if(modes[currentModeIndex !== 'recording']) return;
+    if(currentMode !== 'recording') return;
 
     chrome.runtime.sendMessage({ type: 'updateMousePos', coordinates: { x: event.clientX, y: event.clientY, time: new Date().getTime() }})
   })
 
   addEventHandler('keydown', event => {
-    if(event.target.tagName.toLowerCase() === 'input' || event.keyCode !== 32) return;
+    if(event.keyCode !== 17) return;
 
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
 
       advanceCurrentMode();
-      chrome.runtime.sendMessage({ type: 'setMode', mode: currentModeIndex });
-      
-      if(modes[currentModeIndex] === 'recording'){
-        chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: false })
-      } else {
-        chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: true })
-      }
   })
 
   for(let i = 0; i < EventHandlers.length; i++){
