@@ -30,25 +30,37 @@ const helpers = `
     return path.join(" > ");
   }
 
-  const highlightElement = (coords) => {
+  const nodeResolver = (el) => {
+    if(el === null) return;
+    //return first matching targeted element
+    if(typeof el.click === 'function'){
+      return el
+    } else {
+      //return first matching parent element
+      let pNode = el.parentNode
+      while(typeof pNode.click !== 'function'){
+        pNode = pNode.parentNode
+      }
+      return pNode
+    }
+  }
+
+  const highlightElement = (x , y, width, height) => {
     if(window.self !== window.top) return;
-    const targetIndicator = window.document.createElement('div');
+
+    const targetIndicator = document.createElement('div');
     targetIndicator.id = 'superbot-target-indicator';
-    targetIndicator.style.position = 'absolute';
-    targetIndicator.style.top = coords.y + 'px';
-    targetIndicator.style.left = coords.x + 'px';
-    targetIndicator.style.width = coords.width + 'px';
-    targetIndicator.style.height = coords.height + 'px';
+    targetIndicator.style.position = 'fixed';
+    targetIndicator.style.top = y + 'px';
+    targetIndicator.style.left = x + 'px';
+    targetIndicator.style.width = width + 'px';
+    targetIndicator.style.height = height + 'px';
+    targetIndicator.style.zIndex = 2147483647;
     targetIndicator.style.backgroundColor = '#77dd777F';
     targetIndicator.style.display = 'block';
-    window.document.body.appendChild(targetIndicator);
-    setTimeout(() => {
-      targetIndicator.remove();
-    }, 100);
+    document.body.appendChild(targetIndicator);
+    setTimeout(() => targetIndicator.remove(), 150);
   }`
-
-//TODO: remove this duplicate mode list, content script recorder already has one
-const modes = ['recording', 'hover', 'assert text', 'wait for element']
 
 export default class SuperbotRecorder {
   constructor(){
@@ -56,7 +68,7 @@ export default class SuperbotRecorder {
     this.debugTarget = null
     //TODO: do something with these
     this.mouseCoordinates = []
-    this.currentMode = 3;
+    this.currentMode = 'wait for element';
 
     chrome.runtime.onMessage.addListener(this.messageHandler)
     chrome.debugger.onEvent.addListener(this.debuggerCommandHandler)
@@ -131,14 +143,13 @@ export default class SuperbotRecorder {
       this.removeRecordingWindow();
       this.currentWindow = null;
       this.debugTarget = null;
-      this.currentMode = 3;
+      this.currentMode = 'wait for element';
       recordCommand('close', [['']], '');
 
       //focus extension window
       chrome.windows.getCurrent(window => {
         chrome.tabs.getSelected(window.id, response => {
           chrome.windows.update(response.windowId, { focused: true }, () => {
-            console.log('Extension window should focus now')
             checkForErrors('stop recording focus window');
           });
         });
@@ -158,20 +169,82 @@ export default class SuperbotRecorder {
 
       if(!newTarget.attached){
         chrome.debugger.attach(this.debugTarget, '1.3', () => {
+          checkForErrors('attachDebugger')
           chrome.debugger.sendCommand(this.debugTarget, 'Runtime.enable', () => {
-            checkForErrors('attachDebugger');
+            checkForErrors('Runtime.enable');
           });
         });
       }
     })
   }
 
-  messageHandler = (message, sender, sendResponse) => {
+  captureScreenshot = (coords) => {
+    console.time('element screenshot took:')
+    return new Promise(resolve => {
+      chrome.tabs.captureVisibleTab(this.currentWindow.id, { format: 'jpeg', quality: 92 }, imgData => {
+        this.highlightElement(coords);
+
+        const { x, y, width, height } = coords;
+
+        const tempIMG = new Image;
+        tempIMG.onload = async () => {
+          const canvas = document.createElement('canvas');
+          const canvasContext = canvas.getContext('2d');
+          canvas.width = width;
+          canvas.height = height;
+
+          canvasContext.drawImage(tempIMG, x, y, width, height, 0, 0, width, height);
+
+          const croppedImage = await this.waitForCanvas(canvas, canvasContext, width, height)
+          console.log('%c       ', `font-size: 100px; background: url(${croppedImage}) no-repeat;`);
+          canvas.remove()
+          resolve(croppedImage)
+          console.timeEnd('element screenshot took:')
+        }
+        tempIMG.src = imgData;
+      })
+    })
+  }
+
+  highlightElement = (coords) => {
+    if(coords === undefined || coords === null){
+      return console.log('Element coordinates:', coords);
+    }
+
+    const { x, y, width, height } = coords;
+
+    chrome.debugger.sendCommand(this.debugTarget, 'Runtime.evaluate', {
+      expression: `highlightElement(${x}, ${y}, ${width}, ${height});`,
+      includeCommandLineAPI: true
+    })
+  }
+
+  waitForCanvas = (canvas, context, width, height) => {
+    return new Promise(resolve => {
+      const timerId = setInterval(() => {
+        if(isCanvasDrawn(context, width, height)){
+          resolve(canvas.toDataURL());
+          canvas.remove()
+          clearInterval(timerId);
+        }
+      }, 20);
+    })
+  }
+
+  messageHandler = async (message, sender, sendResponse) => {
     if(this.currentWindow === null || sender.tab.id !== this.currentWindow.tabs[0].id || message.type === undefined) return;
 
     switch(message.type){
       case 'command':
-        commandHandler(message.command, message.targets, message.value);      
+        if(message.command !== 'type' && message.command !== 'sendKeys'){
+          this.toggleRecordingIndicator(false);
+          const elementImage = await this.captureScreenshot(message.coords);
+          this.toggleRecordingIndicator(true);
+          commandHandler(message.command, message.targets, message.value, elementImage);
+        } else {
+          sendResponse(true)
+          commandHandler(message.command, message.targets, message.value);
+        }
       break;
 
       case 'setMode':
@@ -187,7 +260,7 @@ export default class SuperbotRecorder {
       break;
 
       case 'debuggerCommand':
-        switchDebuggerHighlight(this.debugTarget, message.enabled);
+        this.toggleDebuggerHighlight(message.enabled);
       break;
 
       case 'evaluateScripts':
@@ -200,76 +273,89 @@ export default class SuperbotRecorder {
 
   debuggerCommandHandler = (sender, method, params) => {
     if(method === 'Overlay.inspectNodeRequested'){
-      //Do not record commands before a valid base url is opened
-      if(UiState.displayedTest.commands.length === 0) return;
-
+        this.toggleDebuggerHighlight(false);
+        this.toggleRecordingIndicator(false);
+        
         chrome.debugger.sendCommand(this.debugTarget, 'DOM.getBoxModel', {
         backendNodeId: params.backendNodeId
-      }, boxModelData => {
-        if(boxModelData === undefined){
-          return;
+      }, async boxModelData => {
+        if(boxModelData === undefined || boxModelData === null){
+          return console.log('Error boxModelData:', boxModelData);
         }
         const pointX = boxModelData.model.content[0] + (boxModelData.model.width / 2)
         const pointY = boxModelData.model.content[1] + (boxModelData.model.height / 2)
 
-        let execScript = null;
-        switch(modes[this.currentMode]){
-          case 'assert text':
-            execScript = `
-            try {
-              elem = document.elementFromPoint(${pointX}, ${pointY});
-              selector = cssPathBuilder(elem);
-              highlightElement(elem.getBoundingClientRect());
-              elemText = elem.innerText || elem.innerValue;
+        console.log('currentMode:', this.currentMode)
+
+        switch(this.currentMode){
+          case 'assert text': {
+            const res = await this.evaluateScript(`
+              try {
+                elem = document.elementFromPoint(${pointX}, ${pointY});
+                JSON.stringify({ text: elem.innerText || elem.innerValue, coords: nodeResolver(elem).getBoundingClientRect() });
               } catch(e){
-            }`
-          break;
+              }`);
+            console.log('res:', res)
+            const { text, coords } = JSON.parse(res);
+            const elementImage = await this.captureScreenshot(coords);
+            commandHandler('assertText', [['css=body']], text, elementImage)
+          } break; 
 
           case 'hover':
-          case 'wait for element':
-            execScript = `
-            try {
-              elem = document.elementFromPoint(${pointX}, ${pointY});
-              highlightElement(elem.getBoundingClientRect());
-              cssPathBuilder(elem);
-            } catch(e) {
-            }`
+          case 'wait for element': 
+            const res = await this.evaluateScript(`
+              try {
+                elem = document.elementFromPoint(${pointX}, ${pointY});
+                JSON.stringify({ selector: cssPathBuilder(elem), coords: nodeResolver(elem).getBoundingClientRect() });
+              } catch(e) {
+              }`);
+              console.log('res:', res)
+              const { selector, coords } = JSON.parse(res);
+              const elementImage = await this.captureScreenshot(coords);
+
+              if(this.currentMode === 'hover'){
+                commandHandler('mouseOver', [[`css=${selector}`]], '', elementImage);
+                commandHandler('mouseOut', [[`css=${selector}`]], '', elementImage);
+              } else if(this.currentMode === 'wait for element'){
+                commandHandler('waitForElementPresent', [[`css=${selector}`]], '5000', elementImage)
+                this.currentMode = 'recording'
+                chrome.tabs.sendMessage(this.currentWindow.tabs[0].id, { type: 'updateMode', mode: this.currentMode })
+              }
           break;
 
-          default: console.log('Mode not recognized:', modes[this.currentMode]); return;
+          default: console.log('Mode not recognized:', this.currentMode); return;
         }
 
-        chrome.debugger.sendCommand(this.debugTarget, 'Runtime.evaluate', {
-          expression: execScript,
-          includeCommandLineAPI: true
-        }, result => {
-          if(chrome.runtime.lastError !== undefined){
-            console.log('evaluateScript error:', chrome.runtime.lastError.message)
-          }
-
-          //recorder sometimes records target indicator when spamming clicks
-          if(result.result.value === undefined || result.result.value.includes('superbot-target-indicator')) return;
-
-          console.log('result:', result.result);
-          switch(modes[this.currentMode]){
-            case 'assert text':
-              recordCommand('assertText', [['css=body']], result.result.value)
-            break;
-
-            case 'hover':
-              recordCommand('mouseOver', [['css=' + result.result.value]], '');
-              recordCommand('mouseOut', [['css=' + result.result.value]], '');
-            break;
-
-            case 'wait for element':
-              recordCommand('waitForElementPresent', [['css=' + result.result.value]], '7')
-            break;
-
-            default: console.log('mode not recognized:', modes[this.currentMode]); return;
-          }
-        })
+        this.toggleDebuggerHighlight(true);
+        this.toggleRecordingIndicator(true);
       })
     }
+  }
+
+  evaluateScript = (script) => {
+    return new Promise(resolve => {
+      chrome.debugger.sendCommand(this.debugTarget, 'Runtime.evaluate', {
+        expression: script,
+        includeCommandLineAPI: true
+      }, result => {
+        resolve(result.result.value);
+      })
+    })
+  }
+
+  toggleDebuggerHighlight = (enabled) => {
+    if(enabled){
+      chrome.debugger.sendCommand(this.debugTarget, 'Overlay.setInspectMode', elemHighlight)
+      chrome.debugger.sendCommand(this.debugTarget, 'Overlay.enable')
+      checkForErrors('Enable debugger highlight');
+    } else {
+      chrome.debugger.sendCommand(this.debugTarget, 'Overlay.disable')
+      checkForErrors('Disabled debugger highlight');
+    }
+  }
+
+  toggleRecordingIndicator = (enabled) => {
+    chrome.tabs.sendMessage(this.currentWindow.tabs[0].id, { type: 'toggleRecordingIndicator', enabled: enabled })
   }
 }
 
@@ -288,7 +374,7 @@ const recordCommand = (command, targets, value) => {
 }
 
 //handle recorded commands that are sent from content scripts
-const commandHandler = (command, targets, value) => {
+const commandHandler = (command, targets, value, elementImage) => {
   console.log('Command recorded:', command, targets, value)
 
   //Do not record commands before a valid base url is opened
@@ -299,19 +385,10 @@ const commandHandler = (command, targets, value) => {
     const type = Commands.list.get(command).target
     if (type && type.name === ArgTypes.locator.name) {
       newCommand.setTargets(targets)
+      newCommand.setImage(elementImage)
     }
   }
-}
-
-const switchDebuggerHighlight = (debugTarget, enabled) => {
-  if(enabled){
-    chrome.debugger.sendCommand(debugTarget, 'Overlay.setInspectMode', elemHighlight)
-    chrome.debugger.sendCommand(debugTarget, 'Overlay.enable')
-    checkForErrors('Enable debugger highlight');
-  } else {
-    chrome.debugger.sendCommand(debugTarget, 'Overlay.disable')
-    checkForErrors('Disabled debugger highlight');
-  }
+  console.log('newCommand:', newCommand)
 }
 
 const runDebuggerScript = (debugTarget, script, name) => {
@@ -321,14 +398,14 @@ const runDebuggerScript = (debugTarget, script, name) => {
       sourceURL: name,
       persistScript: true
     }, script => {
-      if(script === undefined){
-        console.log('Error compiled script undefined:', script)
-        return;
+      if(script === undefined || script === null){
+        return console.log('Error compiled script:', script)
+        
       }
       chrome.debugger.sendCommand(debugTarget, 'Runtime.runScript', {
         scriptId: script.scriptId
       }, () => {
-        chrome.runtime.lastError;
+        checkForErrors('Runtime.runScript')
         resolve();        
       })
     })
@@ -339,4 +416,14 @@ const checkForErrors = (source) => {
   if(chrome.runtime.lastError !== undefined){
     console.log(`runtime.lastError(${source}): ${chrome.runtime.lastError.message}`);
   }
+}
+
+const isCanvasDrawn = (context, width, height) => {
+  const pixels = context.getImageData(0, 0, width, height).data;
+  for(let i = 0; i < pixels.length; i++){
+    if(pixels[i] !== 0){
+      return true;
+    }
+  }
+  return false;
 }
