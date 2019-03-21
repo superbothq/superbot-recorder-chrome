@@ -54,6 +54,7 @@ export default class Command {
     this.command = command || ''
     this.target = target || ''
     this.value = value || ''
+    this.image = null
     this.export = this.export.bind(this)
     this[EE] = new EventEmitter()
     mergeEventEmitter(this, this[EE])
@@ -103,6 +104,10 @@ export default class Command {
   @action.bound
   setTargets(targets = []) {
     this.targets.replace(targets)
+  }
+
+  setImage = (image) => {
+    this.image = image
   }
 
   @action.bound
