@@ -31,4 +31,3 @@ deploy:
   on:
     repo: superbothq/superbot-recorder-chrome
     branch: superbot
-    tags: true

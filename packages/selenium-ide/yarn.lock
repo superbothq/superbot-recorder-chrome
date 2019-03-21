@@ -993,6 +993,11 @@ brorand@^1.0.1:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/brorand/-/brorand-1.1.0.tgz#12c25efe40a45e3c323eb8675a0a0ce57b22371f"
 
+browser-webdriver@^3.5.0:
+  version "3.6.0-alpha.0"
+  resolved "https://registry.yarnpkg.com/browser-webdriver/-/browser-webdriver-3.6.0-alpha.0.tgz#42bedf9e56816f628aef96950bdb3b9ab8265484"
+  integrity sha1-Qr7fnlaBb2KK75aVC9s7mrgmVIQ=
+
 browserify-aes@^1.0.0, browserify-aes@^1.0.4:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/browserify-aes/-/browserify-aes-1.2.0.tgz#326734642f403dabc3003209853bb70ad428ef48"
@@ -3369,6 +3374,11 @@ js-beautify@^1.7.5:
     mkdirp "~0.5.0"
     nopt "~3.0.1"
 
+js-string-escape@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/js-string-escape/-/js-string-escape-1.0.1.tgz#e2625badbc0d67c7533e9edc1068c587ae4137ef"
+  integrity sha1-4mJbrbwNZ8dTPp7cEGjFh65BN+8=
+
 "js-tokens@^3.0.0 || ^4.0.0":
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/js-tokens/-/js-tokens-4.0.0.tgz#19203fb59991df98e3a287050d4647cdeaf32499"
@@ -5459,6 +5469,13 @@ selfsigned@^1.9.1:
   resolved "https://registry.yarnpkg.com/selfsigned/-/selfsigned-1.10.3.tgz#d628ecf9e3735f84e8bafba936b3cf85bea43823"
   dependencies:
     node-forge "0.7.5"
+
+selianize@^3.5.0:
+  version "3.5.10"
+  resolved "https://registry.yarnpkg.com/selianize/-/selianize-3.5.10.tgz#db51767e0671b8ef29c5dfc179014b6440e8cee2"
+  integrity sha512-QYE9CIeIQf9ssVqsggyresgnte4hkqaNsepfKwXUWmb1Ey24NHrubexzHO2aMv1V783uU0e0eMP+m8w4g2aJEw==
+  dependencies:
+    js-string-escape "^1.0.1"
 
 "semver@2 || 3 || 4 || 5", semver@^5.3.0:
   version "5.5.0"
