@@ -1,5 +1,8 @@
 import addModeIndicator from './modeIndicator'
 import cssPathBuilder from './cssPathBuilder'
+import LocatorBuilders from './locatorBuilders'
+import addActionNotification from './actionNotification';
+const locatorBuilders = new LocatorBuilders(window)
 
 chrome.runtime.sendMessage({ type: 'evaluateScripts' })
 
@@ -39,7 +42,7 @@ const messageHandler = (message, sender, sendResponse) => {
     if(currentMode === 'recording'){
       chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: false })
     }
-  }
+  } 
 }
 
 const recordCommand = (command, targets, value, coords) => {
@@ -85,14 +88,14 @@ const addEventHandler = (type, handler) => {
 }
 
 const attachEventHandlers = () => {
-  addEventHandler('keydown', (event) => {
-    if(event.target.tagName.toLowerCase() === 'input' && event.keyCode === 13){
-      const selector = [['css=' + cssPathBuilder(event.target)]]
-      if(event.target.value !== null && event.target.value !== ''){
-        recordCommand('type', selector, event.target.value)
-      }
-      
-      recordCommand('sendKeys', selector, '${KEY_ENTER}')
+  addEventHandler('keyup', event => {
+    if(event.target.value === undefined || event.target.value === null) return;
+    if(event.keyCode !== 8 && event.target.value === '') return;
+    
+    if(event.keyCode === 13){
+      recordCommand('sendKeys', locatorBuilders.buildAll(event.target), '${KEY_ENTER}')
+    } else {
+      recordCommand('type', locatorBuilders.buildAll(event.target), event.target.value);
     }
   })
 
