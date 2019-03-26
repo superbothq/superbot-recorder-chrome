@@ -7,7 +7,7 @@ export default class Logout extends React.Component {
     return (
       <ActionButton
         data-place='left'
-        data-tip={'<p>Log out</p>'}
+        data-tip={'<p>(Temp.)Log out</p>'}
         {...this.props}
         className={classNames('si-open-tab', this.props.className)}
       /> // eslint-disable-line react/prop-types

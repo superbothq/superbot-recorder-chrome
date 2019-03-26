@@ -453,12 +453,12 @@ export default class Panel extends React.Component {
     }
 
     fetch(`${backendUrl}/logout`, {
-      method: 'DELETE',
+      method: 'GET',
       headers: {
         'Authorization': this.getAuthorizationToken()
       }
     }).then(res => {
-      if(res.status === 302){
+      if(res.status === 200){
         this.setState({ project: null, user: null, stagingEnabled: false, showStagingNotification: true, showUploadWarning: true });
       } else {
         console.log('Logging out failed, status:', res.status)
@@ -496,7 +496,14 @@ export default class Panel extends React.Component {
       window.removeEventListener('beforeunload', this.quitHandler)
     }
   }
-  
+  /*
+  drawCanvasFromImage = () => {
+    const image = document.getElementById('opencv-test-image');
+    const mat = cv.imread(image);
+    cv.imshow('test-canvas', mat);
+    mat.delete();
+  }
+  */
   render() {
     if(this.state.user === null){
       return (
@@ -508,6 +515,15 @@ export default class Panel extends React.Component {
     }
     return (
       <div className="container" onKeyDown={this.handleKeyDownAlt.bind(this)}>
+        {/*
+        <image
+          id='opencv-test-image'
+          src='./robot_face.svg'
+          alt='robot_face'
+          onLoad={this.drawCanvasFromImage}
+        />
+        <canvas id='test-canvas' />
+        */}
         {this.state.stagingEnabled ? (
           <div 
             className='staging-notifier'

@@ -181,7 +181,6 @@ export default class ProjectHeader extends React.Component {
               height: 'initial'
             }}
           />
-          {/*
           <LogoutButton
             onClick={this.props.logout}
             style={{
@@ -190,7 +189,6 @@ export default class ProjectHeader extends React.Component {
               marginLeft: '7px'
             }}
           />
-          */}
         </span>
       </div>
     )
