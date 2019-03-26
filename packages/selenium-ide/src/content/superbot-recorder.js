@@ -42,7 +42,22 @@ const messageHandler = (message, sender, sendResponse) => {
     if(currentMode === 'recording'){
       chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: false })
     }
-  } 
+  } else if(message.type === 'notificationVisible'){
+    try {
+      const nc = document.getElementById('superbot-action-notification');
+      if(nc !== null){
+        nc.remove();
+      }
+      if(message.message !== null){
+        addActionNotification(message.message);
+      } else if(currentMode === 'recording'){
+        addActionNotification('click recorded!');
+      } else {
+        addActionNotification(`${currentMode} recorded!`);
+      }  
+    } catch(e){
+    }
+  }
 }
 
 const recordCommand = (command, targets, value, coords) => {

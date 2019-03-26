@@ -300,6 +300,7 @@ export default {
       { from: 'content/indicator.js', to: './' },
       { from: 'manifest.json', to: '../' },
       { from: '../robot_face.svg', to: '../' },
+      { from: 'opencv.js', to: '../' },
       { from: 'icons', to: '../icons' },
     ]),
     // Generates an `index.html` file with the <script> injected.
