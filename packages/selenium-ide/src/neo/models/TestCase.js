@@ -53,7 +53,7 @@ export default class TestCase {
   }
 
   @action.bound
-  createCommand(index, c, t, v, comment) {
+  createCommand(index, c, t, v, image, coordinates, comment) {
     if (index !== undefined && index.constructor.name !== 'Number') {
       throw new Error(
         `Expected to receive Number instead received ${
@@ -61,7 +61,7 @@ export default class TestCase {
         }`
       )
     } else {
-      const command = new Command(undefined, c, t, v)
+      const command = new Command(undefined, c, t, v, image, coordinates)
       command.addListener(
         'window-handle-name-changed',
         this.updateWindowHandleNames

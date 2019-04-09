@@ -49,12 +49,13 @@ export default class Command {
   @observable
   opensWindowRead = false
 
-  constructor(id = uuidv4(), command, target, value) {
+  constructor(id = uuidv4(), command, target, value, image, coordinates) {
     this.id = id
     this.command = command || ''
     this.target = target || ''
     this.value = value || ''
-    this.image = null
+    this.image = image || null;
+    this.coordinates = coordinates || null;
     this.export = this.export.bind(this)
     this[EE] = new EventEmitter()
     mergeEventEmitter(this, this[EE])
@@ -106,8 +107,12 @@ export default class Command {
     this.targets.replace(targets)
   }
 
-  setImage = (image) => {
+  setImage = image => {
     this.image = image
+  }
+
+  setCoordinates = coordinates => {
+    this.coordinates = coordinates;
   }
 
   @action.bound
@@ -179,6 +184,8 @@ export default class Command {
       target: this.target,
       targets: toJS(this.targets),
       value: this.value,
+      image: this.image,
+      coordinates: this.coordinates
     }
 
     if (this.opensWindow) {
