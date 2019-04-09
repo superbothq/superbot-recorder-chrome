@@ -143,11 +143,14 @@ export class CommandNode {
         commandExecutor.isWindowMethodCommand(this.command.command)
       )
     } else {
+      console.log('Command:', this.command)
       return commandExecutor.sendMessage(
         this.command.command,
         this._interpolateTarget(targetOverride),
         this._interpolateValue(),
-        commandExecutor.isWindowMethodCommand(this.command.command)
+        commandExecutor.isWindowMethodCommand(this.command.command),
+        undefined,
+        this.command.image
       )
     }
   }

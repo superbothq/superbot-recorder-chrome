@@ -228,12 +228,13 @@ export default class ExtCommand {
     }
   }
 
-  sendMessage(command, target, value, top, implicitTime) {
+  sendMessage(command, target, value, top, implicitTime, image) {
     if (/^webdriver/.test(command)) {
       return Promise.resolve({ result: 'success' })
     }
     let tabId = this.getCurrentPlayingTabId()
     let frameId = this.getCurrentPlayingFrameId()
+
     return browser.tabs
       .sendMessage(
         tabId,
@@ -241,6 +242,7 @@ export default class ExtCommand {
           commands: command,
           target: target,
           value: value,
+          image: image
         },
         { frameId: top ? 0 : frameId }
       )

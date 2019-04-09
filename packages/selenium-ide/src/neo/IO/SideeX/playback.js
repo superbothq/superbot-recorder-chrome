@@ -23,6 +23,8 @@ import { createPlaybackTree } from '../../playback/playback-tree'
 import { ControlFlowCommandChecks } from '../../models/Command'
 import Logger from '../../stores/view/Logs'
 import { isProduction } from '../../../common/utils'
+import { waitForCanvas } from '../Superbot/helpers';
+import compareImages from '../../IO/Superbot/templateMatching'
 
 let baseUrl = ''
 let ignoreBreakpoint = false
@@ -536,3 +538,31 @@ function notifyWaitDeprecation(command) {
 function isImplicitWait(command) {
   return command == 'waitForPageToLoad'
 }
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if(message.type !== 'getTab') return;
+  console.log('getTab sender:', sender)
+  chrome.tabs.captureVisibleTab(sender.tab.windowId, { format: 'png' }, imgData => {
+    let tempIMG = new Image;
+    tempIMG.onload = async () => {
+      const canvas = document.createElement('canvas');
+      const canvasContext = canvas.getContext('2d');
+      canvas.width = tempIMG.width;
+      canvas.height = tempIMG.height;
+
+      canvasContext.drawImage(tempIMG, 0, 0);
+
+      const canvasDataUrl = await waitForCanvas(canvas, canvasContext, canvas.width, canvas.height);
+
+      const results = await compareImages(canvasDataUrl, message.elemImg);
+      
+      console.log('playback compareImages:', results);
+      
+      sendResponse(results);
+      canvas.remove()
+      tempIMG = null;
+    }
+    tempIMG.src = imgData;
+  }) 
+  return true;
+})

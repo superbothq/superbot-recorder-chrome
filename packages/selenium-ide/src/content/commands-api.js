@@ -60,7 +60,9 @@ function doCommands(request, _sender, sendResponse) {
       if (selenium['do' + upperCase] != null) {
         try {
           document.body.setAttribute('SideeXPlayingFlag', true)
+          console.log('commands-api request:', request);
           let returnValue = selenium['do' + upperCase](
+            request.image,
             selenium.preprocessParameter(request.target),
             selenium.preprocessParameter(request.value)
           )

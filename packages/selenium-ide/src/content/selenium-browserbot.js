@@ -30,6 +30,7 @@ import { selenium } from './commands-api'
 import goog, { bot, core } from './closure-polyfill'
 import { getTagName, parse_locator } from './utils'
 import PatternMatcher from './PatternMatcher'
+import { nodeResolver } from '../neo/IO/Superbot/helpers';
 
 export const browserVersion = new window.global.BrowserVersion()
 window.global.browserVersion = browserVersion
@@ -1710,11 +1711,41 @@ BrowserBot.prototype.findElementOrNull = function(locator, win) {
   return element
 }
 
-BrowserBot.prototype.findElement = function(locator, win) {
-  let element = this.findElementOrNull(locator, win)
-  if (element == null)
+BrowserBot.prototype.findElement = function(image = null, locator, win) {
+  if(image !== null){
+    this.matchImages(image).then(res => {
+      console.log('matchImages res:', res)
+      if(res !== undefined && res.maxVal > 0.9){
+        const el = nodeResolver(document.elementFromPoint(res.maxLoc.x, res.maxLoc.y));
+        if(el !== null){
+          console.log('NEW selector!')
+          //maybe: return { imgElem: core.firefox.unwrap(el), cssElem: this.oldFindElement(locator) };
+          return core.firefox.unwrap(el);
+        }
+      }
+    })
+  }
+
+  return this.oldFindElement(locator, win);
+}
+
+BrowserBot.prototype.oldFindElement = function(locator, win) {
+  console.log('OLD selector!')
+  const element = this.findElementOrNull(locator, win)
+  if(element === null){
     throw new SeleniumError('Element ' + locator + ' not found')
-  return core.firefox.unwrap(element)
+  } else {
+    return core.firefox.unwrap(element);
+  }
+}
+
+BrowserBot.prototype.matchImages = function(elemImg) {
+  return new Promise(resolve => {
+    chrome.runtime.sendMessage({
+      type: 'getTab',
+      elemImg: elemImg
+    }, res => resolve(res))
+  });
 }
 
 /**
