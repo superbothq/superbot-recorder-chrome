@@ -91,6 +91,13 @@ function createDefaultSuite(
   UiState.selectTest(test)
 }
 
+const getEmptyProject = () => {
+  const project = observable(new ProjectStore(''))
+  UiState.setProject(project)
+  createDefaultSuite(project, { suite: 'Default Suite', test: 'Untitled' })
+  return project
+}
+
 function firefox57WorkaroundForBlankPanel() {
   // TODO: remove this as soon as Mozilla fixes https://bugzilla.mozilla.org/show_bug.cgi?id=1425829
   // browser. windows. create () displays blank windows (panel, popup or detached_panel)
@@ -459,7 +466,16 @@ export default class Panel extends React.Component {
       }
     }).then(res => {
       if(res.status === 200){
-        this.setState({ project: null, user: null, stagingEnabled: false, showStagingNotification: true, showUploadWarning: true });
+        if(UiState.isSuperbotRecording){
+          UiState.toggleSuperbotRecording();
+        }
+        this.setState({
+          project: getEmptyProject(),
+          user: null,
+          stagingEnabled: false,
+          showStagingNotification: true,
+          showUploadWarning: true
+        });
       } else {
         console.log('Logging out failed, status:', res.status)
       }
@@ -496,14 +512,7 @@ export default class Panel extends React.Component {
       window.removeEventListener('beforeunload', this.quitHandler)
     }
   }
-  /*
-  drawCanvasFromImage = () => {
-    const image = document.getElementById('opencv-test-image');
-    const mat = cv.imread(image);
-    cv.imshow('test-canvas', mat);
-    mat.delete();
-  }
-  */
+ 
   render() {
     if(this.state.user === null){
       return (
@@ -515,15 +524,6 @@ export default class Panel extends React.Component {
     }
     return (
       <div className="container" onKeyDown={this.handleKeyDownAlt.bind(this)}>
-        {/*
-        <image
-          id='opencv-test-image'
-          src='./robot_face.svg'
-          alt='robot_face'
-          onLoad={this.drawCanvasFromImage}
-        />
-        <canvas id='test-canvas' />
-        */}
         {this.state.stagingEnabled ? (
           <div 
             className='staging-notifier'

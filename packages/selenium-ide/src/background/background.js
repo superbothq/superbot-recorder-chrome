@@ -149,14 +149,16 @@ function pointIsValid(point) {
 }
 
 chrome.runtime.onMessage.addListener(async message => {
-  if(message.type !== 'extensionLoadTest') return;
+  if(message.type === 'extensionLoadTest'){
+    await openPanel({ windowId: 0 });
 
-  await openPanel({ windowId: 0 });
-
-  chrome.runtime.sendMessage({
-    type: 'extensionLoadTest',
-    testId: message.testId
-  })
+    chrome.runtime.sendMessage({
+      type: 'extensionLoadTest',
+      testId: message.testId
+    })
+  } else if(message.type === 'reloadExtension'){
+    chrome.runtime.reload();
+  }
 })
 
 browser.browserAction.onClicked.addListener(openPanel)
