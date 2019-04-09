@@ -1,5 +1,5 @@
 export const nodeResolver = (el) => {
-  if(el === null) return;
+  if(el === null) return null;
   if(typeof el.click === 'function'){
     return el
   } else {
@@ -53,3 +53,25 @@ export const spawnTargetIndicator = (x , y, width, height) => {
   document.body.appendChild(targetIndicator);
   setTimeout(() => targetIndicator.remove(), 150);
 };
+
+const isCanvasDrawn = (context, width, height) => {
+  const pixels = context.getImageData(0, 0, width, height).data;
+  for(let i = 0; i < pixels.length; i++){
+    if(pixels[i] !== 0){
+      return true;
+    }
+  }
+  return false;
+}
+
+export const waitForCanvas = (canvas, context, width, height) => {
+  return new Promise(resolve => {
+    const timerId = setInterval(() => {
+      if(isCanvasDrawn(context, width, height)){
+        resolve(canvas.toDataURL());
+        canvas.remove()
+        clearInterval(timerId);
+      }
+    }, 20);
+  })
+}
