@@ -41,7 +41,7 @@ const addActionNotification = (message) => {
     notificationContainer.remove();
   }
   
-  const notificationTime = 2000;
+  const notificationTime = 1000;
   const stepInterval = 20;
 
   const bar = notificationContainer.contentDocument.body.children[1];
