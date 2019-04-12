@@ -24,6 +24,7 @@ import SeleniumError from './SeleniumError'
  * @param locator  the locator to parse
  */
 export function parse_locator(locator, silent = false) {
+  console.log('parse_locator:', locator);
   if (!locator) {
     throw new TypeError('Locator cannot be empty')
   }

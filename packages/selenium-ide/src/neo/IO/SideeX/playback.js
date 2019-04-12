@@ -541,28 +541,12 @@ function isImplicitWait(command) {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if(message.type !== 'getTab') return;
-  console.log('getTab sender:', sender)
-  chrome.tabs.captureVisibleTab(sender.tab.windowId, { format: 'png' }, imgData => {
-    let tempIMG = new Image;
-    tempIMG.onload = async () => {
-      const canvas = document.createElement('canvas');
-      const canvasContext = canvas.getContext('2d');
-      canvas.width = tempIMG.width;
-      canvas.height = tempIMG.height;
 
-      canvasContext.drawImage(tempIMG, 0, 0);
-
-      const canvasDataUrl = await waitForCanvas(canvas, canvasContext, canvas.width, canvas.height);
-
-      const results = await compareImages(canvasDataUrl, message.elemImg);
-      
-      console.log('playback compareImages:', results);
-      
-      sendResponse(results);
-      canvas.remove()
-      tempIMG = null;
-    }
-    tempIMG.src = imgData;
-  }) 
+  chrome.tabs.captureVisibleTab(sender.tab.windowId, { format: 'png' }, async (pageScreenshot) => {
+    console.log('pageScreenshot:', pageScreenshot)
+    const res = await compareImages(pageScreenshot, message.elemImg);
+    console.log('playback compareImages:', res);
+    sendResponse(res);
+  })
   return true;
 })
