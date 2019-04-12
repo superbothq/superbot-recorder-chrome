@@ -12,16 +12,13 @@ const renderResult = (source, template, result) => {
   document.body.appendChild(c);
   
   const maxPoint = result.maxLoc;
-  let color;
-  if(result.maxVal > 0.9){
-    color = new cv.Scalar(0, 255, 0, 255);
-  } else if (result.maxVal < 0.9 && result.maxVal > 0.7){
-    color = new cv.Scalar(255, 255, 0, 255);
-  } else {
-    color = new cv.Scalar(255, 0, 0, 255);
-  }
+  const color = result.maxVal > 0.9 ?
+  new cv.Scalar(0, 255, 0, 255) : 
+  new cv.Scalar(255, 0, 0, 255);
+
   const point = new cv.Point(maxPoint.x + template.cols, maxPoint.y + template.rows);
   cv.rectangle(source, maxPoint, point, color, 2, cv.LINE_8, 0);
+  
   cv.imshow(c, source);
   setTimeout(() => {
     c.remove()
@@ -50,8 +47,10 @@ const compareImages = async (img1, img2) => {
 const templateMatch = async (matrices) => {
   const dest = new cv.Mat();
   const mask = new cv.Mat();
-  cv.matchTemplate(matrices[0], matrices[1], dest, cv.TM_CCORR_NORMED);
+  cv.matchTemplate(matrices[0], matrices[1], dest, cv.TM_CCOEFF_NORMED);
   const result = cv.minMaxLoc(dest, mask);
+  result.width = matrices[1].size().width;
+  result.height = matrices[1].size().height;
 
   //TODO: for debugging purposes, remove...
   renderResult(matrices[0], matrices[1], result);

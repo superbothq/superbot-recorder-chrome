@@ -1,7 +1,8 @@
 import UiState from '../../stores/view/UiState'
 import { Commands, ArgTypes } from '../../models/Command'
 import { elemHighlight } from './elementHighlight'
-import { spawnTargetIndicator, nodeResolver, cssPathBuilder, waitForCanvas } from './helpers';
+import { spawnTargetIndicator, nodeResolver, cssPathBuilder, focusWindow } from './helpers';
+import screenshotPreview from './screenshotPreview'
 
 const helpers = `
   spawnTargetIndicator = ${spawnTargetIndicator.toString()};
@@ -17,6 +18,7 @@ export default class SuperbotRecorder {
     //TODO: do something with these
     this.mouseCoordinates = []
     this.currentMode = 'wait for element';
+    this.recordingTempImage = null;
 
     chrome.runtime.onMessage.addListener(this.messageHandler)
     chrome.debugger.onEvent.addListener(this.debuggerCommandHandler)
@@ -110,14 +112,8 @@ export default class SuperbotRecorder {
       this.currentMode = 'wait for element';
       recordCommand('close', [['']], '');
 
-      //focus extension window
-      chrome.windows.getCurrent(window => {
-        chrome.tabs.getSelected(window.id, response => {
-          chrome.windows.update(response.windowId, { focused: true }, () => {
-            checkForErrors('stop recording focus window');
-          });
-        });
-      });
+      //Does not work when minimize button is pressed, only when window is "left behind" under other windows
+      focusWindow();
       
     } catch(e) {
       console.log('stop recording:', e)
@@ -164,35 +160,13 @@ export default class SuperbotRecorder {
           height: coords.height,
           scale: 1.0
         }
-      }, result => resolve(`data:image/png;base64,${result.data}`))
-    })
-  }
-
-  clickCaptureScreenshot = (coords) => {
-    console.time('element screenshot took')
-    return new Promise(resolve => {
-      chrome.tabs.captureVisibleTab(this.currentWindow.id, { format: 'png' }, imgData => {
-        this.toggleNotification();
-
-        const { x, y, width, height } = coords;
-
-        const tempIMG = new Image;
-        tempIMG.onload = async () => {
-          const canvas = document.createElement('canvas');
-          const canvasContext = canvas.getContext('2d');
-          canvas.width = width;
-          canvas.height = height;
-
-          canvasContext.drawImage(tempIMG, x, y, width, height, 0, 0, width, height);
-
-          const croppedImage = await waitForCanvas(canvas, canvasContext, width, height)
-          console.log('%c       ', `font-size: 100px; background: url(${croppedImage}) no-repeat;`);
-          canvas.remove()
-          resolve(croppedImage)
-          console.timeEnd('element screenshot took')
+      }, result => {
+        try {
+          resolve(`data:image/png;base64,${result.data}`)
+        } catch(e) {
+          console.log('Recorder - captureScreenshot error:', e);
         }
-        tempIMG.src = imgData;
-      })
+      });
     })
   }
 
@@ -209,16 +183,6 @@ export default class SuperbotRecorder {
     })
   }
 
-  isDuplicateCommand = (message) => {
-    const targetTest = UiState.displayedTest;
-    const lastCommand = targetTest.commands[targetTest.commands.length-1];
-    if(message.command !== lastCommand.command){
-      return false;
-    } else {
-      return message.targets[0][0] === lastCommand.target;
-    }
-  }
-
   toggleNotification = (msg = null) => {
     chrome.tabs.sendMessage(this.currentTab.id, { type: 'notificationVisible', message: msg });
   }
@@ -228,28 +192,27 @@ export default class SuperbotRecorder {
 
     switch(message.type){
       case 'command':
-        console.log('targets:', message.targets)
-        
         if(message.command === 'type' || message.command === 'sendKeys'){
           this.toggleNotification(`${message.command} recorded!`);
-          if(this.isDuplicateCommand(message)){
+          if(isDuplicateCommand(message)){
             const test = UiState.displayedTest;
             test.removeCommand(test.commands[test.commands.length-1])
           }
+          if(message.command === 'sendKeys'){
+            const test = UiState.displayedTest;
+            const lastCommand = test.commands[test.commands.length-1];
+            if(lastCommand.command === 'type'){
+              message.targets = lastCommand.targets;
+            }
+          }
           commandHandler(message.command, message.targets, message.value);
         } else {
-          console.log('click coords:', message.coords)
-          this.toggleRecordingIndicator(false);
-          const elementImage = await this.clickCaptureScreenshot(message.coords)
-          this.toggleRecordingIndicator(true);
-          chrome.tabs.sendMessage(this.currentTab.id, {
-            type: 'previewScreenshot',
-            image: elementImage
-          }, success => {
-            if(success){
-              commandHandler(message.command, message.targets, message.value, elementImage, message.coords);
-            }
-          });
+          console.log('click recorded:', message);
+          console.log('current temp image:', { image: this.recordingTempImage })
+          commandHandler(message.command, message.targets, message.value, this.recordingTempImage, message.coordinates);
+          this.recordingTempImage = null;
+          this.currentMode = 'recording: select target';
+          chrome.tabs.sendMessage(this.currentTab.id, { type: 'updateMode', mode: this.currentMode });
         }
       break;
 
@@ -273,16 +236,23 @@ export default class SuperbotRecorder {
         chrome.tabs.sendMessage(this.currentTab.id, { type: 'attachSuperbotRecorder' })
       break;
 
+      case 'getRecordingTempImage':
+        sendResponse(this.recordingTempImage);
+        this.recordingTempImage = null;
+      break;
+
       default: console.log('Message type not recognized:', message.type); break;
     }
   }
 
-  debuggerCommandHandler = (sender, method, params) => {
+  debuggerCommandHandler = async (sender, method, params) => {
     if(method === 'Overlay.inspectNodeRequested'){
-      try {  
+      try {
+        await this.toggleDebuggerHighlight(false);
+        await this.toggleRecordingIndicator(false);
         chrome.debugger.sendCommand(this.debugTarget, 'DOM.getBoxModel', {
           backendNodeId: params.backendNodeId
-        }, async boxModelData => {
+        }, async (boxModelData) => {
           checkForErrors('boxModelData');
 
           const pointX = boxModelData.model.content[0] + (boxModelData.model.width / 2)
@@ -296,27 +266,30 @@ export default class SuperbotRecorder {
                 const res = await this.evaluateScript(`
                   try {
                     elem = document.elementFromPoint(${pointX}, ${pointY});
-                    JSON.stringify({ text: elem.innerText || elem.innerValue, coords: nodeResolver(elem).getBoundingClientRect() });
+                    elemParent = elem.parentNode;
+                    while(elemParent.tagName !== 'DIV'){
+                      elemParent = elemParent.parentNode;
+                    }
+                    JSON.stringify({
+                      text: elem.innerText || elem.innerValue,
+                      coords: elem.getBoundingClientRect(),
+                      imageCoords: elemParent.getBoundingClientRect()
+                    });
                   } catch(e){
                   }`);
                 if(res === undefined){
                   throw new Error(`${this.currentMode} evaluateScript: ${res}`);
                 }
-                const { text, coords } = JSON.parse(res);
-                const elementImage = await this.captureScreenshot(coords);
-                chrome.tabs.sendMessage(this.currentTab.id, {
-                  type: 'previewScreenshot',
-                  image: elementImage
-                }, success => {
-                  if(!success){
-                    this.currentMode = 'assert text';
-                    chrome.tabs.sendMessage(this.currentTab.id, { type: 'updateMode', mode: this.currentMode });
-                  } else {
-                    commandHandler('assertText', [['css=body']], text, elementImage);
-                  }
-                });
-                this.currentMode = 'recording';
-                chrome.tabs.sendMessage(this.currentTab.id, { type: 'updateMode', mode: this.currentMode });
+                const { text, coords, imageCoords } = JSON.parse(res);
+                const elementImage = await this.captureScreenshot(imageCoords);
+                focusWindow();
+                const status = await screenshotPreview(elementImage);
+                if(status){
+                  this.toggleNotification(`${this.currentMode} recorded!`);
+                  this.currentMode = 'recording: select target';
+                  chrome.tabs.sendMessage(this.currentTab.id, { type: 'updateMode', mode: this.currentMode });
+                  commandHandler('assertText', [['css=body']], text, elementImage, coords);
+                }
               } catch(e) {
                 console.log(`debuggerCommandHandler error! Current mode: ${this.currentMode} --`, e);
               }
@@ -327,70 +300,104 @@ export default class SuperbotRecorder {
                 const res = await this.evaluateScript(`
                 try {
                   elem = document.elementFromPoint(${pointX}, ${pointY});
-                  JSON.stringify({ selector: cssPathBuilder(elem), coords: nodeResolver(elem).getBoundingClientRect() });
+                  elemParent = elem.parentNode;
+                    while(elemParent.tagName !== 'DIV'){
+                      elemParent = elemParent.parentNode;
+                    }
+                  JSON.stringify({
+                    selector: cssPathBuilder(elem),
+                    coords: elem.getBoundingClientRect(),
+                    imageCoords: elemParent.getBoundingClientRect()
+                  });
                 } catch(e) {
                 }`);
                 if(res === undefined){
                   throw new Error(`${this.currentMode} evaluateScript: ${res}`);
                 }
-                const { selector, coords } = JSON.parse(res);
-                const elementImage = await this.captureScreenshot(coords);
-                chrome.tabs.sendMessage(this.currentTab.id, {
-                  type: 'previewScreenshot',
-                  image: elementImage
-                }, success => {
-                  console.log('debugger preview screenshot verdict:', success)
-                  if(!success){
-                    this.currentMode = 'hover';
-                    chrome.tabs.sendMessage(this.currentTab.id, { type: 'updateMode', mode: this.currentMode });
-                  } else {
-                    commandHandler('mouseOver', [[`css=${selector}`]], '', elementImage);
-                    commandHandler('mouseOut', [[`css=${selector}`]], '', elementImage);
-                  }
-                });
-                this.currentMode = 'recording';
-                chrome.tabs.sendMessage(this.currentTab.id, { type: 'updateMode', mode: this.currentMode });
+                const { selector, coords, imageCoords } = JSON.parse(res);
+                const elementImage = await this.captureScreenshot(imageCoords);
+                focusWindow();
+                const status = await screenshotPreview(elementImage);
+                if(status){
+                  this.toggleNotification(`${this.currentMode} recorded!`);
+                  this.currentMode = 'recording: select target';
+                  chrome.tabs.sendMessage(this.currentTab.id, { type: 'updateMode', mode: this.currentMode });
+                  commandHandler('mouseOver', [[`css=${selector}`]], '', elementImage, coords);
+                  commandHandler('mouseOut', [[`css=${selector}`]], '', elementImage, coords);
+                }
               } catch(e) {
                 console.log('debuggerCommandHandler error:', e);
               }
             } break;
 
-            case 'wait for element':
+            case 'wait for element': {
               try {
                 const res = await this.evaluateScript(`
                 try {
                   elem = document.elementFromPoint(${pointX}, ${pointY});
-                  JSON.stringify({ selector: cssPathBuilder(elem), coords: nodeResolver(elem).getBoundingClientRect() });
+                  elemParent = elem.parentNode;
+                    while(elemParent.tagName !== 'DIV'){
+                      elemParent = elemParent.parentNode;
+                    }
+                  JSON.stringify({
+                    selector: cssPathBuilder(elem),
+                    coords: elem.getBoundingClientRect(),
+                    imageCoords: elemParent.getBoundingClientRect()
+                  });
                 } catch(e) {
                 }`);
                 if(res === undefined){
                   throw new Error(`${this.currentMode} evaluateScript: ${res}`);
                 }
-                const { selector, coords } = JSON.parse(res);
-                const elementImage = await this.captureScreenshot(coords);
-                chrome.tabs.sendMessage(this.currentTab.id, {
-                  type: 'previewScreenshot',
-                  image: elementImage
-                }, success => {
-                  console.log('debugger preview screenshot verdict:', success)
-                  if(!success){
-                    this.currentMode = 'wait for element';
-                    chrome.tabs.sendMessage(this.currentTab.id, { type: 'updateMode', mode: this.currentMode });
-                  } else {
-                    commandHandler('waitForElementPresent', [[`css=${selector}`]], '5000', elementImage);
-                  }
-                });
-                this.currentMode = 'recording';
-                chrome.tabs.sendMessage(this.currentTab.id, { type: 'updateMode', mode: this.currentMode });
+                const { selector, coords, imageCoords } = JSON.parse(res);
+                const elementImage = await this.captureScreenshot(imageCoords);
+                focusWindow();
+                const status = await screenshotPreview(elementImage);
+                if(status){
+                  this.toggleNotification(`${this.currentMode} recorded!`);
+                  this.currentMode = 'recording: select target';
+                  chrome.tabs.sendMessage(this.currentTab.id, { type: 'updateMode', mode: this.currentMode });
+                  commandHandler('waitForElementPresent', [[`css=${selector}`]], '5000', elementImage, coords);
+                }
               } catch(e) {
                 console.log('debuggerCommandHandler error:', e);
               }
-            break;
+            } break;
+
+            case 'recording: select target': {
+              try {
+                const res = await this.evaluateScript(`
+                try {
+                  elem = document.elementFromPoint(${pointX}, ${pointY});
+                  elemParent = elem.parentNode;
+                    while(elemParent.tagName !== 'DIV'){
+                      elemParent = elemParent.parentNode;
+                    }
+                  JSON.stringify({
+                    imageCoords: elemParent.getBoundingClientRect()
+                  });
+                } catch(e) {
+                }`);
+                if(res === undefined){
+                  throw new Error(`${this.currentMode} evaluateScript: ${res}`);
+                }
+                const { imageCoords } = JSON.parse(res);
+                const elementImage = await this.captureScreenshot(imageCoords);
+                focusWindow();
+                const status = await screenshotPreview(elementImage);
+                if(status){
+                  this.recordingTempImage = elementImage;
+                  this.currentMode = 'recording: click element';
+                  chrome.tabs.sendMessage(this.currentTab.id, { type: 'updateMode', mode: this.currentMode });
+                }
+              } catch(e) {
+                console.log('debuggerCommandHandler error:', e);
+              }
+            } break;
 
             default: console.log('Mode not recognized:', this.currentMode); return;
           }
         
-
           this.toggleDebuggerHighlight(true);
           this.toggleRecordingIndicator(true);
         })
@@ -433,26 +440,31 @@ export default class SuperbotRecorder {
     })
   }
 
-  toggleDebuggerHighlight = (enabled) => {
+  toggleDebuggerHighlight = (enabled) => new Promise(resolve => {
     try {
       if(enabled){
         chrome.debugger.sendCommand(this.debugTarget, 'Overlay.setInspectMode', elemHighlight, () => {
           checkForErrors('Enable debugger highlight');
+          chrome.debugger.sendCommand(this.debugTarget, 'Overlay.enable', () => {
+            resolve();
+          })
         })
-        chrome.debugger.sendCommand(this.debugTarget, 'Overlay.enable')
       } else {
         chrome.debugger.sendCommand(this.debugTarget, 'Overlay.disable', () => {
           checkForErrors('Disabled debugger highlight');
+          resolve();
         })
       }
     } catch(e) {
-     console.log('Error toggling debugger highlight:', e) 
+      console.log('Error toggling debugger highlight:', e) 
     }
-  }
+  })
 
-  toggleRecordingIndicator = (enabled) => {
-    chrome.tabs.sendMessage(this.currentTab.id, { type: 'toggleRecordingIndicator', enabled: enabled })
-  }
+  toggleRecordingIndicator = (state) => new Promise(resolve => {
+    chrome.tabs.sendMessage(this.currentTab.id, { type: 'toggleRecordingIndicator', enabled: state }, () => {
+      resolve();
+    })
+  })
 }
 
 const recordCommand = (command, targets, value, image, coordinates) => {
@@ -491,3 +503,12 @@ const checkForErrors = (source) => {
   }
 }
 
+const isDuplicateCommand = (message) => {
+  const targetTest = UiState.displayedTest;
+  const lastCommand = targetTest.commands[targetTest.commands.length-1];
+  if(message.command !== lastCommand.command){
+    return false;
+  } else {
+    return message.targets[0][0] === lastCommand.target;
+  }
+}

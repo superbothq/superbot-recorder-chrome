@@ -1,7 +1,6 @@
 import addModeIndicator from './modeIndicator'
 import LocatorBuilders from './locatorBuilders'
 import addActionNotification from './actionNotification';
-import previewScreenshot from './screenshotPreview';
 const locatorBuilders = new LocatorBuilders(window)
 
 chrome.runtime.sendMessage({ type: 'evaluateScripts' })
@@ -10,7 +9,7 @@ let attached = false
 const EventHandlers = []
 
 let currentMode = null;
-const modes = ['recording', 'hover', 'assert text', 'wait for element']
+const modes = ['recording: select target', 'recording: click element', 'hover', 'assert text', 'wait for element']
 
 const messageHandler = (message, sender, sendResponse) => {
   switch(message.type){
@@ -18,7 +17,7 @@ const messageHandler = (message, sender, sendResponse) => {
       if(!attached){
         chrome.runtime.sendMessage({ type: 'getMode' }, savedMode => {
           currentMode = savedMode;
-          if(currentMode !== 'recording'){
+          if(currentMode !== 'recording: click element'){
             chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: true })
           }
           addModeIndicator(currentMode);
@@ -46,7 +45,7 @@ const messageHandler = (message, sender, sendResponse) => {
       if(modeIndicator !== null){
         modeIndicator.contentDocument.body.children[1].innerText = `Current mode: ${currentMode}`;
       }
-      if(currentMode === 'recording'){
+      if(currentMode === 'recording: click element'){
         chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: false })
       } else {
         chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: true })
@@ -59,34 +58,21 @@ const messageHandler = (message, sender, sendResponse) => {
         if(nc !== null){
           nc.remove();
         }
-        if(message.message !== null){
-          addActionNotification(message.message);
-        } else if(currentMode === 'recording'){
-          addActionNotification('click recorded!');
-        } else {
-          addActionNotification(`${currentMode} recorded!`);
-        }  
+        addActionNotification(message.message);
       } catch(e){
+        console.log('Message - notificationVisible error:', e);
       }
-    break;
-
-    case 'previewScreenshot':
-      if(message.image === undefined){
-        throw new Error('Image undefined');
-      }
-      previewScreenshot(message, sendResponse);
-      return true;
     break;
   }
 }
 
-const recordCommand = (command, targets, value, coords) => {
+const recordCommand = (command, targets, value, coordinates) => {
   chrome.runtime.sendMessage({
     type: 'command',
     command: command,
     targets: targets,
     value: value,
-    coords: coords
+    coordinates: coordinates
   })
 }
 
@@ -105,7 +91,7 @@ const advanceCurrentMode = (targetMode = null) => {
     }
     modeIndicator.contentDocument.body.children[1].innerText = 'Current mode: ' + currentMode;
     chrome.runtime.sendMessage({ type: 'setMode', mode: currentMode });
-    if(currentMode === 'recording'){
+    if(currentMode === 'recording: click element'){
       chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: false })
     } else {
       chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: true })
@@ -138,7 +124,7 @@ const attachEventHandlers = () => {
   })
 
   addEventHandler('click', (event) => {
-    if(currentMode !== 'recording'){
+    if(currentMode !== 'recording: click element'){
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
@@ -154,12 +140,12 @@ const attachEventHandlers = () => {
       }
     }
 
-    const coords = event.target.getBoundingClientRect();
-    recordCommand('click', locatorBuilders.buildAll(event.target), '', coords);
+    const coordinates = event.target.getBoundingClientRect();
+    recordCommand('click', locatorBuilders.buildAll(event.target), '', coordinates);
   })
   
   addEventHandler('mousemove', event => {
-    if(currentMode !== 'recording') return;
+    if(currentMode !== 'recording: click element') return;
 
     chrome.runtime.sendMessage({ type: 'updateMousePos', coordinates: { x: event.clientX, y: event.clientY, time: new Date().getTime() }})
   })
