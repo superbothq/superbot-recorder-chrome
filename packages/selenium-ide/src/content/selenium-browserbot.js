@@ -1697,6 +1697,7 @@ BrowserBot.prototype.recursivelyDeleteCookie = function(
  */
 BrowserBot.prototype.findElementOrNull = function(locator, win) {
   locator = parse_locator(locator)
+  console.log('parse_locator res:', locator)
 
   if (win == null) {
     win = this.getCurrentWindow()
@@ -1705,33 +1706,42 @@ BrowserBot.prototype.findElementOrNull = function(locator, win) {
     { [locator.type]: locator.string },
     win.document
   )
+  console.log('bot.locators.findElement:', element)
   element = core.firefox.unwrap(element)
+  console.log('unwrap element:', element)
 
   // Element was not found by any locator function.
   return element
 }
 
-BrowserBot.prototype.findElement = function(image = null, locator, win) {
-  if(image !== null){
-    this.matchImages(image).then(res => {
-      console.log('matchImages res:', res)
-      if(res !== undefined && res.maxVal > 0.9){
-        const el = nodeResolver(document.elementFromPoint(res.maxLoc.x, res.maxLoc.y));
-        if(el !== null){
-          console.log('NEW selector!')
-          //maybe: return { imgElem: core.firefox.unwrap(el), cssElem: this.oldFindElement(locator) };
-          return core.firefox.unwrap(el);
-        }
+BrowserBot.prototype.findElement = async function(coords = null, image = null, locator, win) {
+  console.log('BrowserBot findElement coords:', coords)
+  if(image !== undefined && image !== null){
+    const res = await this.matchImages(image);
+    console.log('matchImages res:', res)
+    if(res !== undefined && res.maxVal > 0.9){
+      /* TEMP
+      coords = res;
+      coords.x = res.maxLoc.x;
+      coords.y = res.maxLoc.y;
+      */
+      const el = nodeResolver(document.elementFromPoint(coords.x + (coords.width / 2), coords.y + (coords.height / 2)));
+      console.log('findElement el:', el);
+      if(el !== null){
+        console.log('NEW selector!')
+        return el;
       }
-    })
+    }
   }
-
-  return this.oldFindElement(locator, win);
+    console.log('BrowserBot findElement image:', image);
+    console.log('BrowserBot findElement locator:', locator);
+    console.log('OLD selector!');
+    return this.oldFindElement(locator, win);
 }
 
 BrowserBot.prototype.oldFindElement = function(locator, win) {
-  console.log('OLD selector!')
   const element = this.findElementOrNull(locator, win)
+  console.log('BrowserBot oldFindElement res:', element)
   if(element === null){
     throw new SeleniumError('Element ' + locator + ' not found')
   } else {

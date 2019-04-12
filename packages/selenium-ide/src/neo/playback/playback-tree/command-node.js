@@ -150,7 +150,8 @@ export class CommandNode {
         this._interpolateValue(),
         commandExecutor.isWindowMethodCommand(this.command.command),
         undefined,
-        this.command.image
+        this.command.image,
+        this.command.coordinates
       )
     }
   }
