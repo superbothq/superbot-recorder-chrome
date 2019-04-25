@@ -149,39 +149,37 @@ export default class SuperbotRecorder {
     })
   }
 
-  captureScreenshot = coords => {
-    return new Promise(resolve => {
-      console.log('captureScreenshot coordinates:', coords);
-      chrome.debugger.sendCommand(this.debugTarget, 'Page.captureScreenshot', {
-        clip: {
-          x: coords.x,
-          y: coords.y,
-          width: coords.width,
-          height: coords.height,
-          scale: 1.0
+  captureScreenshot = coords => new Promise(resolve => {
+    chrome.tabs.captureVisibleTab(this.currentWindow.id, { format: 'png' }, async (sourceImg) => {
+      const promises = [];
+      for(let i = 0; i < coords.length; i++){
+        promises.push(this.cropImage(sourceImg, coords[i]));
         }
-      }, result => {
-        try {
-          resolve(`data:image/png;base64,${result.data}`)
-        } catch(e) {
-          console.log('Recorder - captureScreenshot error:', e);
-        }
-      });
+      const croppedImages = await Promise.all(promises);
+      console.log('croppedImages:', croppedImages);
+      resolve(croppedImages);
     })
-  }
+  })
 
-  highlightElement = (coords) => {
-    if(coords === undefined || coords === null){
-      return console.log('Element coordinates:', coords);
-    }
-
+  cropImage = (source, coords) => new Promise(resolve => {
     const { x, y, width, height } = coords;
+    console.log('raw img data:', { imgData: source });
+    console.log('elem coordinates:', coords)
+    const tempIMG = new Image;
+    tempIMG.onload = async () => {
+      const canvas = document.createElement('canvas');
+      const canvasContext = canvas.getContext('2d');
+      canvas.width = width;
+      canvas.height = height;
 
-    chrome.debugger.sendCommand(this.debugTarget, 'Runtime.evaluate', {
-      expression: `spawnTargetIndicator(${x}, ${y}, ${width}, ${height});`,
-      includeCommandLineAPI: true
-    })
+      canvasContext.drawImage(tempIMG, x, y, width, height, 0, 0, width, height);
+
+      const croppedImage = await waitForCanvas(canvas, canvasContext)
+      canvas.remove()
+      resolve(croppedImage)
   }
+    tempIMG.src = source;
+  })
 
   toggleNotification = (msg = null) => {
     chrome.tabs.sendMessage(this.currentTab.id, { type: 'notificationVisible', message: msg });
