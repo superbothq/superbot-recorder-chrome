@@ -151,7 +151,6 @@ export class CommandNode {
         commandExecutor.isWindowMethodCommand(this.command.command),
         undefined,
         this.command.image,
-        this.command.coordinates
       )
     }
   }

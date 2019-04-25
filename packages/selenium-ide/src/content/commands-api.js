@@ -62,7 +62,6 @@ function doCommands(request, _sender, sendResponse) {
           document.body.setAttribute('SideeXPlayingFlag', true)
           console.log('commands-api request:', request);
           let returnValue = selenium['do' + upperCase](
-            request.coords || undefined,
             request.image || undefined,
             selenium.preprocessParameter(request.target),
             selenium.preprocessParameter(request.value)

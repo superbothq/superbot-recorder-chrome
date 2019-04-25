@@ -264,7 +264,7 @@ Selenium.prototype.doEvaluateConditional = function(script) {
   return !!this.eval(script.script, script.argv, true, true)
 }
 
-Selenium.prototype.doVerifyChecked = async function(coords = null, image = null, locator) {
+Selenium.prototype.doVerifyChecked = async function(image = null, locator) {
   let element = await this.browserbot.findElement(image, locator)
   if (element.type !== 'checkbox' && element.type !== 'radio') {
     throw new Error(
@@ -275,7 +275,7 @@ Selenium.prototype.doVerifyChecked = async function(coords = null, image = null,
   }
 }
 
-Selenium.prototype.doVerifyNotChecked = async function(coords = null, image = null, locator) {
+Selenium.prototype.doVerifyNotChecked = async function(image = null, locator) {
   let element = await this.browserbot.findElement(image, locator)
   if (element.type !== 'checkbox' && element.type !== 'radio') {
     throw new Error(
@@ -286,19 +286,19 @@ Selenium.prototype.doVerifyNotChecked = async function(coords = null, image = nu
   }
 }
 
-Selenium.prototype.doVerifyEditable = function(coords = null, image = null, locator) {
+Selenium.prototype.doVerifyEditable = function(locator) {
   if (!this.isEditable(locator)) {
     throw new Error(`Element with locator ${locator} is not editable`)
   }
 }
 
-Selenium.prototype.doVerifyNotEditable = function(coords = null, image = null, locator) {
+Selenium.prototype.doVerifyNotEditable = function(locator) {
   if (this.isEditable(locator)) {
     throw new Error(`Element with locator ${locator} is editable`)
   }
 }
 
-Selenium.prototype.doVerifySelectedValue = async function(coords = null, image = null, locator, value) {
+Selenium.prototype.doVerifySelectedValue = async function(image = null, locator, value) {
   let element = await this.browserbot.findElement(image, locator)
   if (element.type !== 'select-one') {
     throw new Error(`Element with locator ${locator} is not a select`)
@@ -309,7 +309,7 @@ Selenium.prototype.doVerifySelectedValue = async function(coords = null, image =
   }
 }
 
-Selenium.prototype.doVerifyNotSelectedValue = async function(coords = null, image = null, locator, value) {
+Selenium.prototype.doVerifyNotSelectedValue = async function(image = null, locator, value) {
   let element = await this.browserbot.findElement(image, locator)
   if (element.type !== 'select-one') {
     throw new Error(`Element with locator ${locator} is not a select`)
@@ -318,15 +318,15 @@ Selenium.prototype.doVerifyNotSelectedValue = async function(coords = null, imag
   }
 }
 
-Selenium.prototype.doVerifyText = function(coords = null, image = null, locator, value) {
+Selenium.prototype.doVerifyText = function(locator, value) {
   this.doAssertText(locator, value)
 }
 
-Selenium.prototype.doVerifyNotText = function(coords = null, image = null, locator, value) {
+Selenium.prototype.doVerifyNotText = function(locator, value) {
   this.doAssertNotText(locator, value)
 }
 
-Selenium.prototype.doVerifyValue = async function(coords = null, image = null, locator, value) {
+Selenium.prototype.doVerifyValue = async function(image = null, locator, value) {
   let element = await this.browserbot.findElement(image, locator)
   if (element.value !== value) {
     throw new Error(
@@ -347,7 +347,7 @@ Selenium.prototype.doVerifyTitle = function(value) {
   }
 }
 
-Selenium.prototype.doVerifyElementPresent = async function(coords = null, image = null, locator) {
+Selenium.prototype.doVerifyElementPresent = async function(image = null, locator) {
   try {
     await this.browserbot.findElement(image, locator)
   } catch (error) {
@@ -359,7 +359,7 @@ Selenium.prototype.doVerifyElementPresent = async function(coords = null, image 
   }
 }
 
-Selenium.prototype.doVerifyElementNotPresent = async function(coords = null, image = null, locator) {
+Selenium.prototype.doVerifyElementNotPresent = async function(image = null, locator) {
   try {
     await this.browserbot.findElement(image, locator)
     throw new Error(`Element with locator ${locator} was found`)
@@ -392,7 +392,7 @@ Selenium.prototype.doAssert = function(variableName, expected) {
   })
 }
 
-Selenium.prototype.doAssertChecked = async function(coords = null, image = null, locator) {
+Selenium.prototype.doAssertChecked = async function(image = null, locator) {
   let element = await this.browserbot.findElement(image, locator)
   if (element.type !== 'checkbox' && element.type !== 'radio') {
     throw new Error(
@@ -403,7 +403,7 @@ Selenium.prototype.doAssertChecked = async function(coords = null, image = null,
   }
 }
 
-Selenium.prototype.doAssertNotChecked = async function(coords = null, image = null, locator) {
+Selenium.prototype.doAssertNotChecked = async function(image = null, locator) {
   let element = await this.browserbot.findElement(image, locator)
   if (element.type !== 'checkbox' && element.type !== 'radio') {
     throw new Error(
@@ -414,19 +414,19 @@ Selenium.prototype.doAssertNotChecked = async function(coords = null, image = nu
   }
 }
 
-Selenium.prototype.doAssertEditable = function(coords = null, image = null, locator) {
+Selenium.prototype.doAssertEditable = function(locator) {
   if (!this.isEditable(locator)) {
     throw new Error(`Element with locator ${locator} is not editable`)
   }
 }
 
-Selenium.prototype.doAssertNotEditable = function(coords = null, image = null, locator) {
+Selenium.prototype.doAssertNotEditable = function(locator) {
   if (this.isEditable(locator)) {
     throw new Error(`Element with locator ${locator} is editable`)
   }
 }
 
-Selenium.prototype.doAssertSelectedValue = async function(coords = null, image = null, locator, value) {
+Selenium.prototype.doAssertSelectedValue = async function(image = null, locator, value) {
   let element = await this.browserbot.findElement(image, locator)
   if (element.type !== 'select-one') {
     throw new Error(`Element with locator ${locator} is not a select`)
@@ -455,7 +455,7 @@ Selenium.prototype.doAssertSelectedLabel = function(selectLocator, value) {
   }
 }
 
-Selenium.prototype.doAssertNotSelectedValue = async function(coords = null, image = null, locator, value) {
+Selenium.prototype.doAssertNotSelectedValue = async function(image = null, locator, value) {
   let element = await this.browserbot.findElement(image, locator)
   if (element.type !== 'select-one') {
     throw new Error(`Element with locator ${locator} is not a select`)
@@ -464,7 +464,7 @@ Selenium.prototype.doAssertNotSelectedValue = async function(coords = null, imag
   }
 }
 
-Selenium.prototype.findElementVisible = async function(coords = null, image = null, locator) {
+Selenium.prototype.findElementVisible = async function(image = null, locator) {
   console.log('isShown error image:', image);
   console.log('isShown error locator:', locator);
   const element = await this.browserbot.findElement(image, locator)
@@ -473,7 +473,7 @@ Selenium.prototype.findElementVisible = async function(coords = null, image = nu
   return element
 }
 
-Selenium.prototype.doAssertText = function(coords = null, image = null, locator, value) {
+Selenium.prototype.doAssertText = function(locator, value) {
   const element = this.findElementVisible(locator)
   const visibleText = bot.dom.getVisibleText(element)
   if (!visibleText.includes(value)) {
@@ -481,7 +481,7 @@ Selenium.prototype.doAssertText = function(coords = null, image = null, locator,
   }
 }
 
-Selenium.prototype.doAssertNotText = function(coords = null, image = null, locator, value) {
+Selenium.prototype.doAssertNotText = function(locator, value) {
   const element = this.findElementVisible(locator)
   const visibleText = bot.dom.getVisibleText(element)
   if (visibleText === value) {
@@ -489,7 +489,7 @@ Selenium.prototype.doAssertNotText = function(coords = null, image = null, locat
   }
 }
 
-Selenium.prototype.doAssertValue = async function(coords = null, image = null, locator, value) {
+Selenium.prototype.doAssertValue = async function(image = null, locator, value) {
   let element = await this.browserbot.findElement(image, locator)
   if (element.value !== value) {
     throw new Error(
@@ -510,7 +510,7 @@ Selenium.prototype.doAssertTitle = function(value) {
   }
 }
 
-Selenium.prototype.doAssertElementPresent = async function(coords = null, image = null, locator) {
+Selenium.prototype.doAssertElementPresent = async function(image = null, locator) {
   try {
     await this.browserbot.findElement(image, locator)
   } catch (error) {
@@ -522,7 +522,7 @@ Selenium.prototype.doAssertElementPresent = async function(coords = null, image 
   }
 }
 
-Selenium.prototype.doAssertElementNotPresent = async function(coords = null, image = null, locator) {
+Selenium.prototype.doAssertElementNotPresent = async function(image = null, locator) {
   try {
     await this.browserbot.findElement(image, locator)
     throw new Error(`Element with locator ${locator} was found`)
@@ -548,7 +548,7 @@ Selenium.prototype.doStoreEval = function() {
   throw new Error('store eval is obsolete please migrate to execute script')
 }
 
-Selenium.prototype.doStoreText = async function(coords = null, image = null, locator, varName) {
+Selenium.prototype.doStoreText = async function(image = null, locator, varName) {
   throwIfNoVarNameProvided(varName)
   let text
   try {
@@ -572,7 +572,7 @@ Selenium.prototype.doStoreText = async function(coords = null, image = null, loc
   })
 }
 
-Selenium.prototype.doStoreValue = async function(coords = null, image = null, locator, varName) {
+Selenium.prototype.doStoreValue = async function(image = null, locator, varName) {
   throwIfNoVarNameProvided(varName)
   let element = await this.browserbot.findElement(image, locator)
   return browser.runtime.sendMessage({
@@ -602,7 +602,7 @@ Selenium.prototype.doStoreXpathCount = function(xpath, varName) {
   })
 }
 
-Selenium.prototype.doStoreAttribute = function(coords = null, image = null, locator, varName) {
+Selenium.prototype.doStoreAttribute = function(locator, varName) {
   throwIfNoVarNameProvided(varName)
   let attributeValue = this.browserbot.findAttribute(locator)
   return browser.runtime.sendMessage({
@@ -640,7 +640,10 @@ function waitUntil(condition, target, timeout, failureMessage) {
   })
 }
 
-Selenium.prototype.doWaitForElementPresent = function(coords = null, image = null, locator, timeout) {
+Selenium.prototype.doWaitForElementPresent = function(images = null, locator, timeout) {
+  console.log('doWaitForElementPresent images:', images)
+  console.log('doWaitForElementPresent locator:', locator)
+  console.log('doWaitForElementPresent timeout:', timeout)
   return waitUntil(
     this.isElementPresent.bind(this),
     locator,
@@ -649,7 +652,7 @@ Selenium.prototype.doWaitForElementPresent = function(coords = null, image = nul
   )
 }
 
-Selenium.prototype.doWaitForElementNotPresent = function(coords = null, image = null, locator, timeout) {
+Selenium.prototype.doWaitForElementNotPresent = function(locator, timeout) {
   return waitUntil(
     isElementNotPresent.bind(this),
     locator,
@@ -658,7 +661,7 @@ Selenium.prototype.doWaitForElementNotPresent = function(coords = null, image = 
   )
 }
 
-Selenium.prototype.doWaitForElementVisible = function(coords = null, image = null, locator, timeout) {
+Selenium.prototype.doWaitForElementVisible = function(locator, timeout) {
   return waitUntil(
     isDisplayed.bind(this),
     locator,
@@ -667,7 +670,7 @@ Selenium.prototype.doWaitForElementVisible = function(coords = null, image = nul
   )
 }
 
-Selenium.prototype.doWaitForElementNotVisible = function(coords = null, image = null, locator, timeout) {
+Selenium.prototype.doWaitForElementNotVisible = function(locator, timeout) {
   return waitUntil(
     isNotDisplayed.bind(this),
     locator,
@@ -676,7 +679,7 @@ Selenium.prototype.doWaitForElementNotVisible = function(coords = null, image = 
   )
 }
 
-Selenium.prototype.doWaitForElementEditable = function(coords = null, image = null, locator, timeout) {
+Selenium.prototype.doWaitForElementEditable = function(locator, timeout) {
   return waitUntil(
     isEditable.bind(this),
     locator,
@@ -685,7 +688,7 @@ Selenium.prototype.doWaitForElementEditable = function(coords = null, image = nu
   )
 }
 
-Selenium.prototype.doWaitForElementNotEditable = function(coords = null, image = null, locator, timeout) {
+Selenium.prototype.doWaitForElementNotEditable = function(locator, timeout) {
   return waitUntil(
     isNotEditable.bind(this),
     locator,
@@ -815,7 +818,7 @@ Selenium.prototype.doDomWait = function() {
   )
 }
 
-Selenium.prototype.doClick = async function(coords = null, image = null, locator) {
+Selenium.prototype.doClick = async function(image = null, locator) {
   /**
    * Clicks on a link, button, checkbox or radio button. If the click action
    * causes a new page to load (like a link usually does), call
@@ -825,15 +828,13 @@ Selenium.prototype.doClick = async function(coords = null, image = null, locator
    *
    */
 
-   console.log('got coords:', coords)
 
-  let element = await this.browserbot.findElement(coords, image, locator)
-  console.log('doClick element:', element)
+  let element = await this.browserbot.findElement(image, locator)
   bot.action.click(element)
 }
 
 
-Selenium.prototype.doDoubleClick = async function(coords = null, image = null, locator) {
+Selenium.prototype.doDoubleClick = async function(image = null, locator) {
   /**
    * Double clicks on a link, button, checkbox or radio button. If the double click action
    * causes a new page to load (like a link usually does), call
@@ -846,7 +847,7 @@ Selenium.prototype.doDoubleClick = async function(coords = null, image = null, l
   bot.action.doubleClick(element)
 }
 
-Selenium.prototype.doContextMenu = async function(coords = null, image = null, locator) {
+Selenium.prototype.doContextMenu = async function(image = null, locator) {
   /**
    * Simulates opening the context menu for the specified element (as might happen if the user "right-clicked" on the element).
    *
@@ -857,7 +858,7 @@ Selenium.prototype.doContextMenu = async function(coords = null, image = null, l
   bot.action.rightClick(element)
 }
 
-Selenium.prototype.doClickAt = async function(coords = null, image = null, locator, coordString) {
+Selenium.prototype.doClickAt = async function(image = null, locator, coordString) {
   /**
    * Clicks on a link, button, checkbox or radio button. If the click action
    * causes a new page to load (like a link usually does), call
@@ -869,11 +870,11 @@ Selenium.prototype.doClickAt = async function(coords = null, image = null, locat
    *
    */
   let element = await this.browserbot.findElement(image, locator)
-  coords = getCoords(element, coordString)
+  const coords = getCoords(element, coordString)
   bot.action.click(element, coords)
 }
 
-Selenium.prototype.doDoubleClickAt = async function(coords = null, image = null, locator, coordString) {
+Selenium.prototype.doDoubleClickAt = async function(image = null, locator, coordString) {
   /**
    * Doubleclicks on a link, button, checkbox or radio button. If the action
    * causes a new page to load (like a link usually does), call
@@ -885,11 +886,11 @@ Selenium.prototype.doDoubleClickAt = async function(coords = null, image = null,
    *
    */
   let element = await this.browserbot.findElement(image, locator)
-  coords = getCoords(element, coordString)
+  const coords = getCoords(element, coordString)
   bot.action.doubleClick(element, coords)
 }
 
-Selenium.prototype.doContextMenuAt = async function(coords = null, image = null, locator, coordString) {
+Selenium.prototype.doContextMenuAt = async function(image = null, locator, coordString) {
   /**
    * Simulates opening the context menu for the specified element (as might happen if the user "right-clicked" on the element).
    *
@@ -899,11 +900,11 @@ Selenium.prototype.doContextMenuAt = async function(coords = null, image = null,
    *
    */
   let element = await this.browserbot.findElement(image, locator)
-  coords = getCoords(element, coordString)
+  const coords = getCoords(element, coordString)
   bot.action.rightClick(element, coords)
 }
 
-Selenium.prototype.doFocus = async function(coords = null, image = null, locator) {
+Selenium.prototype.doFocus = async function(image = null, locator) {
   /** Move the focus to the specified element; for example, if the element is an input field, move the cursor to that field.
    *
    * @param locator an <a href="#locators">element locator</a>
@@ -1025,7 +1026,7 @@ function getCoords(_element, coordString) {
   return new goog.math.Coordinate(x, y)
 }
 
-Selenium.prototype.prepareToInteract_ = async function(coords = null, image = null, locator) {
+Selenium.prototype.prepareToInteract_ = async function(image = null, locator) {
   let element = await this.browserbot.findElement(image, locator)
   let rect = element.getBoundingClientRect()
   bot.action.prepareToInteractWith_(
@@ -1035,7 +1036,7 @@ Selenium.prototype.prepareToInteract_ = async function(coords = null, image = nu
   return element.getBoundingClientRect()
 }
 
-Selenium.prototype.doMouseOver = async function(coords = null, image = null, locator) {
+Selenium.prototype.doMouseOver = async function(image = null, locator) {
   /**
    * Simulates a user hovering a mouse over the specified element.
    *
@@ -1050,7 +1051,7 @@ Selenium.prototype.doMouseOver = async function(coords = null, image = null, loc
   )
 }
 
-Selenium.prototype.doMouseOut = async function(coords = null, image = null, locator) {
+Selenium.prototype.doMouseOut = async function(image = null, locator) {
   /**
    * Simulates a user moving the mouse pointer away from the specified element.
    *
@@ -1060,7 +1061,7 @@ Selenium.prototype.doMouseOut = async function(coords = null, image = null, loca
   this.browserbot.triggerMouseEvent(element, 'mouseout', true)
 }
 
-Selenium.prototype.doMouseDown = async function(coords = null, image = null, locator) {
+Selenium.prototype.doMouseDown = async function(image = null, locator) {
   /**
    * Simulates a user pressing the left mouse button (without releasing it yet) on
    * the specified element.
@@ -1071,7 +1072,7 @@ Selenium.prototype.doMouseDown = async function(coords = null, image = null, loc
   this.browserbot.triggerMouseEvent(element, 'mousedown', true)
 }
 
-Selenium.prototype.doMouseDownRight = async function(coords = null, image = null, locator) {
+Selenium.prototype.doMouseDownRight = async function(image = null, locator) {
   /**
    * Simulates a user pressing the right mouse button (without releasing it yet) on
    * the specified element.
@@ -1089,7 +1090,7 @@ Selenium.prototype.doMouseDownRight = async function(coords = null, image = null
   )
 }
 
-Selenium.prototype.doMouseDownAt = async function(coords = null, image = null, locator, coordString) {
+Selenium.prototype.doMouseDownAt = async function(image = null, locator, coordString) {
   /**
    * Simulates a user pressing the left mouse button (without releasing it yet) at
    * the specified location.
@@ -1110,7 +1111,7 @@ Selenium.prototype.doMouseDownAt = async function(coords = null, image = null, l
   )
 }
 
-Selenium.prototype.doMouseDownRightAt = async function(coords = null, image = null, locator, coordString) {
+Selenium.prototype.doMouseDownRightAt = async function(image = null, locator, coordString) {
   /**
    * Simulates a user pressing the right mouse button (without releasing it yet) at
    * the specified location.
@@ -1132,7 +1133,7 @@ Selenium.prototype.doMouseDownRightAt = async function(coords = null, image = nu
   )
 }
 
-Selenium.prototype.doMouseUp = async function(coords = null, image = null, locator) {
+Selenium.prototype.doMouseUp = async function(image = null, locator) {
   /**
    * Simulates the event that occurs when the user releases the mouse button (i.e., stops
    * holding the button down) on the specified element.
@@ -1143,7 +1144,7 @@ Selenium.prototype.doMouseUp = async function(coords = null, image = null, locat
   this.browserbot.triggerMouseEvent(element, 'mouseup', true)
 }
 
-Selenium.prototype.doMouseUpRight = async function(coords = null, image = null, locator) {
+Selenium.prototype.doMouseUpRight = async function(image = null, locator) {
   /**
    * Simulates the event that occurs when the user releases the right mouse button (i.e., stops
    * holding the button down) on the specified element.
@@ -1161,7 +1162,7 @@ Selenium.prototype.doMouseUpRight = async function(coords = null, image = null, 
   )
 }
 
-Selenium.prototype.doMouseUpAt = async function(coords = null, image = null, locator, coordString) {
+Selenium.prototype.doMouseUpAt = async function(image = null, locator, coordString) {
   /**
    * Simulates the event that occurs when the user releases the mouse button (i.e., stops
    * holding the button down) at the specified location.
@@ -1182,7 +1183,7 @@ Selenium.prototype.doMouseUpAt = async function(coords = null, image = null, loc
   )
 }
 
-Selenium.prototype.doMouseUpRightAt = async function(coords = null, image = null, locator, coordString) {
+Selenium.prototype.doMouseUpRightAt = async function(image = null, locator, coordString) {
   /**
    * Simulates the event that occurs when the user releases the right mouse button (i.e., stops
    * holding the button down) at the specified location.
@@ -1204,7 +1205,7 @@ Selenium.prototype.doMouseUpRightAt = async function(coords = null, image = null
   )
 }
 
-Selenium.prototype.doMouseMove = async function(coords = null, image = null, locator) {
+Selenium.prototype.doMouseMove = async function(image = null, locator) {
   /**
    * Simulates a user pressing the mouse button (without releasing it yet) on
    * the specified element.
@@ -1215,7 +1216,7 @@ Selenium.prototype.doMouseMove = async function(coords = null, image = null, loc
   this.browserbot.triggerMouseEvent(element, 'mousemove', true)
 }
 
-Selenium.prototype.doMouseMoveAt = async function(coords = null, image = null, locator, coordString) {
+Selenium.prototype.doMouseMoveAt = async function(image = null, locator, coordString) {
   /**
    * Simulates a user pressing the mouse button (without releasing it yet) on
    * the specified element.
@@ -1237,7 +1238,7 @@ Selenium.prototype.doMouseMoveAt = async function(coords = null, image = null, l
   )
 }
 
-Selenium.prototype.doType = async function(coords = null, image = null, locator, value) {
+Selenium.prototype.doType = async function(image = null, locator, value) {
   /**
    * Sets the value of an input field, as though you typed it in.
    *
@@ -1256,11 +1257,8 @@ Selenium.prototype.doType = async function(coords = null, image = null, locator,
       'type not supported immediately after call to controlKeyDown() or altKeyDown() or metaKeyDown()'
     )
   }
-  console.log('doType coords:', coords)
-  console.log('doType image:', image)
-  console.log('doType locator:', locator)
-  console.log('doType value:', value)
-  let element = await this.browserbot.findElement(undefined, undefined, locator)
+
+  let element = await this.browserbot.findElement(image, locator)
 
   core.events.setValue(element, '')
   const type = element.type
@@ -1275,7 +1273,7 @@ Selenium.prototype.doType = async function(coords = null, image = null, locator,
   bot.events.fire(element, bot.events.EventType.CHANGE)
 }
 
-Selenium.prototype.doSendKeys = async function(coords = null, image = null, locator, value) {
+Selenium.prototype.doSendKeys = async function(image = null, locator, value) {
   /**
    * *Experimental* Simulates keystroke events on the specified element, as though you typed the value key-by-key.
    *
@@ -1306,7 +1304,7 @@ Selenium.prototype.doSendKeys = async function(coords = null, image = null, loca
   }
 
   let element = await this.browserbot.findElement(image, locator)
-  console.log('doSendKeys element:', elements)
+  console.log('doSendKeys element:', element)
   let keys = this.replaceKeys(value)
   console.log('doSendKeys keys:', keys);
   bot.action.type(element, keys)
@@ -1339,7 +1337,7 @@ Selenium.prototype.getSpeed = function() {
   )
 }
 
-Selenium.prototype.findToggleButton = async function(coords = null, image = null, locator) {
+Selenium.prototype.findToggleButton = async function(image = null, locator) {
   let element = await this.browserbot.findElement(image, locator)
   if (element.checked == null) {
     throw new Error('Element ' + locator + ' is not a toggle-button.') // eslint-disable-line no-undef
@@ -1347,7 +1345,7 @@ Selenium.prototype.findToggleButton = async function(coords = null, image = null
   return element
 }
 
-Selenium.prototype.doCheck = function(coords = null, image = null, locator) {
+Selenium.prototype.doCheck = function(locator) {
   /**
    * Check a toggle-button (checkbox/radio)
    *
@@ -1356,7 +1354,7 @@ Selenium.prototype.doCheck = function(coords = null, image = null, locator) {
   this.findToggleButton(locator).checked = true
 }
 
-Selenium.prototype.doUncheck = function(coords = null, image = null, locator) {
+Selenium.prototype.doUncheck = function(locator) {
   /**
    * Uncheck a toggle-button (checkbox/radio)
    *
@@ -1414,7 +1412,7 @@ Selenium.prototype.doSelect = async function(selectLocator, optionLocator) {
    * @param selectLocator an <a href="#locators">element locator</a> identifying a drop-down menu
    * @param optionLocator an option locator (a label by default)
    */
-  let element = await this.browserbot.findElement(selectLocator)
+  let element = await this.browserbot.findElement(null, selectLocator)
   if (!('options' in element)) {
     throw new SeleniumError(
       'Specified element is not a Select (has no options)'
@@ -1425,7 +1423,7 @@ Selenium.prototype.doSelect = async function(selectLocator, optionLocator) {
   this.browserbot.selectOption(element, option)
 }
 
-Selenium.prototype.doAddSelection = async function(coords = null, image = null, locator, optionLocator) {
+Selenium.prototype.doAddSelection = async function(image = null, locator, optionLocator) {
   /**
    * Add a selection to the set of selected options in a multi-select element using an option locator.
    *
@@ -1445,7 +1443,7 @@ Selenium.prototype.doAddSelection = async function(coords = null, image = null, 
   this.browserbot.addSelection(element, option)
 }
 
-Selenium.prototype.doRemoveSelection = async function(coords = null, image = null, locator, optionLocator) {
+Selenium.prototype.doRemoveSelection = async function(image = null, locator, optionLocator) {
   /**
    * Remove a selection from the set of selected options in a multi-select element using an option locator.
    *
@@ -1466,7 +1464,7 @@ Selenium.prototype.doRemoveSelection = async function(coords = null, image = nul
   this.browserbot.removeSelection(element, option)
 }
 
-Selenium.prototype.doRemoveAllSelections = async function(coords = null, image = null, locator) {
+Selenium.prototype.doRemoveAllSelections = async function(image = null, locator) {
   /**
    * Unselects all of the selected options in a multi-select element.
    *
@@ -1642,7 +1640,7 @@ Selenium.prototype.doDeselectPopUp = function() {
   this.browserbot.selectWindow()
 }
 
-Selenium.prototype.doSelectFrame = function(coords = null, image = null, locator) {
+Selenium.prototype.doSelectFrame = function(locator) {
   /**
    * Selects a frame within the current window.  (You may invoke this command
    * multiple times to select nested frames.)  To select the parent frame, use
@@ -2014,7 +2012,7 @@ Selenium.prototype.getBodyText = function() {
   return this.browserbot.bodyText()
 }
 
-Selenium.prototype.getValue = async function(coords = null, image = null, locator) {
+Selenium.prototype.getValue = async function(image = null, locator) {
   /**
    * Gets the (whitespace-trimmed) value of an input field (or anything else with a value parameter).
    * For checkbox/radio elements, the value will be "on" or "off" depending on
@@ -2027,7 +2025,7 @@ Selenium.prototype.getValue = async function(coords = null, image = null, locato
   return element.value.trim()
 }
 
-Selenium.prototype.getText = async function(coords = null, image = null, locator) {
+Selenium.prototype.getText = async function(image = null, locator) {
   /**
    * Gets the text of an element. This works for any element that contains
    * text. This command uses either the textContent (Mozilla-like browsers) or
@@ -2067,7 +2065,7 @@ Selenium.prototype.getEval = function(script) {
   }
 }
 
-Selenium.prototype.isChecked = async function(coords = null, image = null, locator) {
+Selenium.prototype.isChecked = async function(image = null, locator) {
   /**
    * Gets whether a toggle-button (checkbox/radio) is checked.  Fails if the specified element doesn't exist or isn't a toggle-button.
    * @param locator an <a href="#locators">element locator</a> pointing to a checkbox or radio button
@@ -2219,7 +2217,7 @@ Selenium.prototype.isSomethingSelected = async function(selectLocator) {
   return false
 }
 
-Selenium.prototype.findSelectedOptionProperties = async function(coords = null, image = null, locator, property) {
+Selenium.prototype.findSelectedOptionProperties = async function(image = null, locator, property) {
   let element = await this.browserbot.findElement(image, locator)
   if (!('options' in element)) {
     throw new SeleniumError(
@@ -2239,7 +2237,7 @@ Selenium.prototype.findSelectedOptionProperties = async function(coords = null, 
   return selectedOptions
 }
 
-Selenium.prototype.findSelectedOptionProperty = function(coords = null, image = null, locator, property) {
+Selenium.prototype.findSelectedOptionProperty = function(locator, property) {
   let selectedOptions = this.findSelectedOptionProperties(locator, property)
   if (selectedOptions.length > 1) {
     Assert.fail('More than one selected option!') // eslint-disable-line no-undef
@@ -2314,6 +2312,7 @@ Selenium.prototype.isElementPresent = function(locator) {
    * @param locator an <a href="#locators">element locator</a>
    * @return boolean true if the element is present, false otherwise
    */
+  console.log('isElementPresent locator:', locator)
   let element = this.browserbot.findElementOrNull(locator)
   if (element == null) {
     return false
@@ -2341,7 +2340,7 @@ function isDisplayed(locator) {
   }
 }
 
-Selenium.prototype.isVisible = async function(coords = null, image = null, locator) {
+Selenium.prototype.isVisible = async function(image = null, locator) {
   /**
    * Determines if the specified element is visible. An
    * element can be rendered invisible by setting the CSS "visibility"
@@ -2434,7 +2433,7 @@ function isNotEditable(locator) {
   }
 }
 
-Selenium.prototype.isEditable = async function(coords = null, image = null, locator) {
+Selenium.prototype.isEditable = async function(image = null, locator) {
   /**
    * Determines whether the specified input element is editable, ie hasn't been disabled.
    * This method will fail if the specified element isn't an input element.
@@ -2522,7 +2521,7 @@ Selenium.prototype.getMouseSpeed = function() {
   return this.mouseSpeed
 }
 
-Selenium.prototype.doDragAndDrop = async function(coords = null, image = null, locator, movementsString) {
+Selenium.prototype.doDragAndDrop = async function(image = null, locator, movementsString) {
   /** Drags an element a certain distance and then drops it
    * @param locator an element locator
    * @param movementsString offset in pixels from the current location to which the element should be moved, e.g., "+70,-300"
@@ -2669,7 +2668,7 @@ Selenium.prototype.getHtmlSource = function() {
   return this.browserbot.getDocument().getElementsByTagName('html')[0].innerHTML
 }
 
-Selenium.prototype.doSetCursorPosition = async function(coords = null, image = null, locator, position) {
+Selenium.prototype.doSetCursorPosition = async function(image = null, locator, position) {
   /**
    * Moves the text cursor to the specified position in the given input element or textarea.
    * This method will fail if the specified element isn't an input element or textarea.
@@ -2698,7 +2697,7 @@ Selenium.prototype.doSetCursorPosition = async function(coords = null, image = n
   }
 }
 
-Selenium.prototype.getElementIndex = async function(coords = null, image = null, locator) {
+Selenium.prototype.getElementIndex = async function(image = null, locator) {
   /**
    * Get the relative index of an element to its parent (starting from 0). The comment node and empty text node
    * will be ignored.
@@ -2718,7 +2717,7 @@ Selenium.prototype.getElementIndex = async function(coords = null, image = null,
   return index
 }
 
-Selenium.prototype.isOrdered = async function(coords = null, image = null, locator1, locator2) {
+Selenium.prototype.isOrdered = async function(locator1, locator2) {
   /**
    * Check if these two elements have same parent and are ordered siblings in the DOM. Two same elements will
    * not be considered ordered.
@@ -2747,7 +2746,7 @@ Selenium.prototype._isCommentOrEmptyTextNode = function(node) {
   )
 }
 
-Selenium.prototype.getElementPositionLeft = async function(coords = null, image = null, locator) {
+Selenium.prototype.getElementPositionLeft = async function(image = null, locator) {
   /**
    * Retrieves the horizontal position of an element
    *
@@ -2788,7 +2787,7 @@ Selenium.prototype.getElementPositionLeft = async function(coords = null, image 
   return x
 }
 
-Selenium.prototype.getElementPositionTop = async function(coords = null, image = null, locator) {
+Selenium.prototype.getElementPositionTop = async function(image = null, locator) {
   /**
    * Retrieves the vertical position of an element
    *
@@ -2843,7 +2842,7 @@ Selenium.prototype.getElementPositionTop = async function(coords = null, image =
   return y
 }
 
-Selenium.prototype.getElementWidth = async function(coords = null, image = null, locator) {
+Selenium.prototype.getElementWidth = async function(image = null, locator) {
   /**
    * Retrieves the width of an element
    *
@@ -2854,7 +2853,7 @@ Selenium.prototype.getElementWidth = async function(coords = null, image = null,
   return element.offsetWidth
 }
 
-Selenium.prototype.getElementHeight = async function(coords = null, image = null, locator) {
+Selenium.prototype.getElementHeight = async function(image = null, locator) {
   /**
    * Retrieves the height of an element
    *
@@ -2865,7 +2864,7 @@ Selenium.prototype.getElementHeight = async function(coords = null, image = null
   return element.offsetHeight
 }
 
-Selenium.prototype.getCursorPosition = async function(coords = null, image = null, locator) {
+Selenium.prototype.getCursorPosition = async function(image = null, locator) {
   /**
    * Retrieves the text cursor position in the given input element or textarea; beware, this may not work perfectly on all browsers.
    *
@@ -2950,7 +2949,7 @@ Selenium.prototype.getCssCount = function(css) {
   return result
 }
 
-Selenium.prototype.doAssignId = async function(coords = null, image = null, locator, identifier) {
+Selenium.prototype.doAssignId = async function(image = null, locator, identifier) {
   /**
    * Temporarily sets the "id" attribute of the specified element, so you can locate it in the future
    * using its ID rather than a slow/complicated XPath.  This ID will disappear once the page is
@@ -3543,7 +3542,7 @@ Selenium.prototype.doUseXpathLibrary = function(libraryName) {
  */
 function OptionLocatorFactory() {}
 
-OptionLocatorFactory.prototype.fromLocatorString = function(coords = null, image = null, locatorString) {
+OptionLocatorFactory.prototype.fromLocatorString = function(locatorString) {
   let locatorType = 'label'
   let locatorValue = locatorString
   // If there is a locator prefix, use the specified strategy
@@ -3667,7 +3666,7 @@ OptionLocatorFactory.prototype.OptionLocatorById = function(id) {
 }
 
 //EditContentExt, Lin Yun Wen, SELAB, CSIE, NCKU, 2016/11/17
-Selenium.prototype.doEditContent = async function(coords = null, image = null, locator, value) {
+Selenium.prototype.doEditContent = async function(image = null, locator, value) {
   /**
    *to set text in the element which's conentEditable attribute is true
    *@param locator an element locator
@@ -3728,7 +3727,7 @@ Selenium.prototype.doAssertConfirmation = function(value) {
   })
 }
 
-Selenium.prototype.doShowElement = async function(coords = null, image = null, locator) {
+Selenium.prototype.doShowElement = async function(image = null, locator) {
   const elementForInjectingStyle = document.createElement('link')
   elementForInjectingStyle.rel = 'stylesheet'
   elementForInjectingStyle.href = browser.runtime.getURL(

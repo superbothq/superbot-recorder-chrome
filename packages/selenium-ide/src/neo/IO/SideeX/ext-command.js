@@ -228,7 +228,7 @@ export default class ExtCommand {
     }
   }
 
-  sendMessage(command, target, value, top, implicitTime, image, coords) {
+  sendMessage(command, target, value, top, implicitTime, image) {
     if (/^webdriver/.test(command)) {
       return Promise.resolve({ result: 'success' })
     }
@@ -243,7 +243,6 @@ export default class ExtCommand {
           target: target,
           value: value,
           image: image,
-          coords: coords
         },
         { frameId: top ? 0 : frameId }
       )
