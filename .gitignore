@@ -30,3 +30,4 @@ packages/selenium-ide/jsconfig.json
 .eslintrc.js
 
 .travis.yml.backup
+packages/selenium-ide/build.pem
