@@ -43,7 +43,7 @@ const messageHandler = (message, sender, sendResponse) => {
       currentMode = message.mode
       const modeIndicator = document.getElementById('superbot-mode-indicator');
       if(modeIndicator !== null){
-        modeIndicator.contentDocument.body.children[1].innerText = `Current mode: ${currentMode}`;
+        modeIndicator.contentDocument.body.children[1].innerText = currentMode;
       }
       if(currentMode === 'recording: click element'){
         chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: false })
@@ -89,12 +89,12 @@ const advanceCurrentMode = (targetMode = null) => {
         currentMode = modes[index + 1];
       }
     }
-    modeIndicator.contentDocument.body.children[1].innerText = 'Current mode: ' + currentMode;
+    modeIndicator.contentDocument.body.children[1].innerText = currentMode;
     chrome.runtime.sendMessage({ type: 'setMode', mode: currentMode });
     if(currentMode === 'recording: click element'){
-      chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: false })
+      chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: false })
     } else {
-      chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: true })
+      chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: true })
     }
   } catch(e){
     console.log(e)
