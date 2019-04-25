@@ -243,155 +243,120 @@ export default class SuperbotRecorder {
     }
   }
 
-  debuggerCommandHandler = async (sender, method, params) => {
+  debuggerCommandHandler = (sender, method, params) => {
     if(method === 'Overlay.inspectNodeRequested'){
       try {
-        await this.toggleDebuggerHighlight(false);
-        await this.toggleRecordingIndicator(false);
+        Promise.all([this.toggleDebuggerHighlight(false), this.toggleRecordingIndicator(false)]).then(() => {
         chrome.debugger.sendCommand(this.debugTarget, 'DOM.getBoxModel', {
           backendNodeId: params.backendNodeId
         }, async (boxModelData) => {
-          checkForErrors('boxModelData');
+            if(checkForErrors('boxModelData')){
+              console.log('ERROR: debugger command not recorded!')
+              return;
+            }
 
           const pointX = boxModelData.model.content[0] + (boxModelData.model.width / 2)
           const pointY = boxModelData.model.content[1] + (boxModelData.model.height / 2)
 
           console.log('currentMode:', this.currentMode)
 
-          switch(this.currentMode){
-            case 'assert text': {
-              try {
                 const res = await this.evaluateScript(`
+              {
                   try {
-                    elem = document.elementFromPoint(${pointX}, ${pointY});
-                    elemParent = elem.parentNode;
-                    while(elemParent.tagName !== 'DIV'){
-                      elemParent = elemParent.parentNode;
+                  elements = document.elementsFromPoint(${pointX}, ${pointY});
+                  if(elements.length < 1){
+                    throw new Error('No elements found at point ${pointX}, ${pointY}');
                     }
+                  console.log('elements:  ', [...elements])
+
+                  splicedParents = elements.filter(el => typeof el.click === 'function' &&
+                    el.clientWidth > 0 &&
+                    el.clientHeight > 0 &&
+                    el.nodeName !== 'HTML' &&
+                    el.nodeName !== 'BODY')
+                  if(splicedParents.length < 1){
+                    throw new Error('No clickable elements found:', splicedParents);
+                  }
+
+                  elem = splicedParents.shift();
+                  console.log('target element:', elem);
+
+                  let parents = [];
+                  let parentImageCount = 0;
+                  for(let i = 0; i < splicedParents.length; i++){
+                      const coordinates = splicedParents[i].getBoundingClientRect();
+                      console.log('coords:', coordinates)
+                      if(parents.length > 1){
+                        const lastCoords = parents[parents.length-1];
+                        console.log('last parent:', parents[i-1])
+                        if(coordinates.x !== lastCoords.x ||
+                          coordinates.y !== lastCoords.y ||
+                          coordinates.width !== lastCoords.width ||
+                          coordinates.height !== lastCoords.height){
+                            parents.push(coordinates);
+                            parentImageCount++;
+                            if(parentImageCount > 5){
+                              break;
+                            }
+                          }
+                      } else {
+                        parents.push(coordinates);
+                        parentImageCount++;
+                      }
+                  }
+                  if(parents.length < 1){
+                    throw new Error('No parents found for element!');
+                  }
+                  const elementPathCoordinates = [elem.getBoundingClientRect(), ...parents];
+                  console.log('elementPathCoordinates:', elementPathCoordinates)
                     JSON.stringify({
                       text: elem.innerText || elem.innerValue,
-                      coords: elem.getBoundingClientRect(),
-                      imageCoords: elemParent.getBoundingClientRect()
+                    selector: cssPathBuilder(elem),
+                    imageCoords: elementPathCoordinates
                     });
                   } catch(e){
-                  }`);
-                if(res === undefined){
-                  throw new Error(`${this.currentMode} evaluateScript: ${res}`);
+                  console.log('Error in debugger evaluate script:', e);
                 }
-                const { text, coords, imageCoords } = JSON.parse(res);
-                const elementImage = await this.captureScreenshot(imageCoords);
-                focusWindow();
-                const status = await screenshotPreview(elementImage);
-                if(status){
+              }
+            `);
+                if(res === undefined){
+              //throw new Error(`${this.currentMode} evaluateScript: ${res}`);
+              console.log(`${this.currentMode} evaluateScript: ${res}`);
+                }
+            const { text, selector, imageCoords } = JSON.parse(res);
+            const elementImages = await this.captureScreenshot(imageCoords);
+            console.log('elementImage:', { img: elementImages });
                   this.toggleNotification(`${this.currentMode} recorded!`);
+
+            switch(this.currentMode){
+              case 'assert text':
                   this.currentMode = 'recording: select target';
                   chrome.tabs.sendMessage(this.currentTab.id, { type: 'updateMode', mode: this.currentMode });
-                  commandHandler('assertText', [['css=body']], text, elementImage, coords);
-                }
-              } catch(e) {
-                console.log(`debuggerCommandHandler error! Current mode: ${this.currentMode} --`, e);
-              }
-            } break; 
+                commandHandler('assertText', [['css=body']], text, elementImages);
+                commandPreview({ command: 'assertText', target: 'css=body', value: text, image: elementImages[0] });
+              break; 
 
-            case 'hover': {
-              try {
-                const res = await this.evaluateScript(`
-                try {
-                  elem = document.elementFromPoint(${pointX}, ${pointY});
-                  elemParent = elem.parentNode;
-                    while(elemParent.tagName !== 'DIV'){
-                      elemParent = elemParent.parentNode;
-                    }
-                  JSON.stringify({
-                    selector: cssPathBuilder(elem),
-                    coords: elem.getBoundingClientRect(),
-                    imageCoords: elemParent.getBoundingClientRect()
-                  });
-                } catch(e) {
-                }`);
-                if(res === undefined){
-                  throw new Error(`${this.currentMode} evaluateScript: ${res}`);
-                }
-                const { selector, coords, imageCoords } = JSON.parse(res);
-                const elementImage = await this.captureScreenshot(imageCoords);
-                focusWindow();
-                const status = await screenshotPreview(elementImage);
-                if(status){
-                  this.toggleNotification(`${this.currentMode} recorded!`);
+              case 'hover':
                   this.currentMode = 'recording: select target';
                   chrome.tabs.sendMessage(this.currentTab.id, { type: 'updateMode', mode: this.currentMode });
-                  commandHandler('mouseOver', [[`css=${selector}`]], '', elementImage, coords);
-                  commandHandler('mouseOut', [[`css=${selector}`]], '', elementImage, coords);
-                }
-              } catch(e) {
-                console.log('debuggerCommandHandler error:', e);
-              }
-            } break;
+                commandHandler('mouseOver', [[`css=${selector}`]], '', elementImages);
+                commandHandler('mouseOut', [[`css=${selector}`]], '', elementImages);
+                commandPreview({ command: 'mouseOver', target: selector, value: '', image: elementImages[0] });
+                commandPreview({ command: 'mouseOver', target: `css=${selector}`, value: '', image: elementImages[0] });
+              break;
 
-            case 'wait for element': {
-              try {
-                const res = await this.evaluateScript(`
-                try {
-                  elem = document.elementFromPoint(${pointX}, ${pointY});
-                  elemParent = elem.parentNode;
-                    while(elemParent.tagName !== 'DIV'){
-                      elemParent = elemParent.parentNode;
-                    }
-                  JSON.stringify({
-                    selector: cssPathBuilder(elem),
-                    coords: elem.getBoundingClientRect(),
-                    imageCoords: elemParent.getBoundingClientRect()
-                  });
-                } catch(e) {
-                }`);
-                if(res === undefined){
-                  throw new Error(`${this.currentMode} evaluateScript: ${res}`);
-                }
-                const { selector, coords, imageCoords } = JSON.parse(res);
-                const elementImage = await this.captureScreenshot(imageCoords);
-                focusWindow();
-                const status = await screenshotPreview(elementImage);
-                if(status){
-                  this.toggleNotification(`${this.currentMode} recorded!`);
+              case 'wait for element':
                   this.currentMode = 'recording: select target';
                   chrome.tabs.sendMessage(this.currentTab.id, { type: 'updateMode', mode: this.currentMode });
-                  commandHandler('waitForElementPresent', [[`css=${selector}`]], '5000', elementImage, coords);
-                }
-              } catch(e) {
-                console.log('debuggerCommandHandler error:', e);
-              }
-            } break;
+                commandHandler('waitForElementPresent', [[`css=${selector}`]], '5000', elementImages);
+                commandPreview({ command: 'waitForElementPresent', target: `css=${selector}`, value: '5000', image: elementImages[0] });
+              break;
 
-            case 'recording: select target': {
-              try {
-                const res = await this.evaluateScript(`
-                try {
-                  elem = document.elementFromPoint(${pointX}, ${pointY});
-                  elemParent = elem.parentNode;
-                    while(elemParent.tagName !== 'DIV'){
-                      elemParent = elemParent.parentNode;
-                    }
-                  JSON.stringify({
-                    imageCoords: elemParent.getBoundingClientRect()
-                  });
-                } catch(e) {
-                }`);
-                if(res === undefined){
-                  throw new Error(`${this.currentMode} evaluateScript: ${res}`);
-                }
-                const { imageCoords } = JSON.parse(res);
-                const elementImage = await this.captureScreenshot(imageCoords);
-                focusWindow();
-                const status = await screenshotPreview(elementImage);
-                if(status){
-                  this.recordingTempImage = elementImage;
+              case 'recording: select target':
                   this.currentMode = 'recording: click element';
                   chrome.tabs.sendMessage(this.currentTab.id, { type: 'updateMode', mode: this.currentMode });
-                }
-              } catch(e) {
-                console.log('debuggerCommandHandler error:', e);
-              }
-            } break;
+                this.recordingTempImage = elementImages;
+              break;
 
             default: console.log('Mode not recognized:', this.currentMode); return;
           }
@@ -399,18 +364,19 @@ export default class SuperbotRecorder {
           this.toggleDebuggerHighlight(true);
           this.toggleRecordingIndicator(true);
         })
+        })
       } catch(e) {
         console.log(e);
       }
     }
   }
 
-  evaluateScript = (script) => {
-    return new Promise(resolve => {
+  evaluateScript = (script) => new Promise(resolve => {
       chrome.debugger.sendCommand(this.debugTarget, 'Runtime.evaluate', {
         expression: script,
         includeCommandLineAPI: true
       }, result => {
+      checkForErrors('evaluateScript');
         console.log('eval script result:', result)
         resolve(result.result.value);
       })
