@@ -542,11 +542,17 @@ function isImplicitWait(command) {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if(message.type !== 'getTab') return;
 
-  chrome.tabs.captureVisibleTab(sender.tab.windowId, { format: 'png' }, async (pageScreenshot) => {
-    console.log('pageScreenshot:', pageScreenshot)
-    const res = await compareImages(pageScreenshot, message.elemImg);
-    console.log('playback compareImages:', res);
-    sendResponse(res);
-  })
+  try {
+    chrome.tabs.captureVisibleTab(sender.tab.windowId, { format: 'png' }, async (pageScreenshot) => {
+      if(chrome.runtime.lastError !== undefined){
+        console.log('Error capturing screenshot:', chrome.runtime.lastError)
+      }
+      const res = await compareImages(pageScreenshot, message.elemImg);
+      console.log('playback compareImages:', res);
+      sendResponse(res);
+    })
+  } catch(e) {
+    console.log('Error capturing tab screenshot:', e);
+  }
   return true;
 })
