@@ -37,23 +37,6 @@ export const cssPathBuilder = (el) => {
   return path.join(" > ");
 };
 
-export const spawnTargetIndicator = (x , y, width, height) => {
-  if(window.self !== window.top) return;
-
-  const targetIndicator = document.createElement('div');
-  targetIndicator.id = 'superbot-target-indicator';
-  targetIndicator.style.position = 'fixed';
-  targetIndicator.style.top = y + 'px';
-  targetIndicator.style.left = x + 'px';
-  targetIndicator.style.width = width + 'px';
-  targetIndicator.style.height = height + 'px';
-  targetIndicator.style.zIndex = 2147483647;
-  targetIndicator.style.backgroundColor = '#77dd777F';
-  targetIndicator.style.display = 'block';
-  document.body.appendChild(targetIndicator);
-  setTimeout(() => targetIndicator.remove(), 150);
-};
-
 const isCanvasDrawn = (context, width, height) => {
   const pixels = context.getImageData(0, 0, width, height).data;
   for(let i = 0; i < pixels.length; i++){
@@ -64,17 +47,14 @@ const isCanvasDrawn = (context, width, height) => {
   return false;
 }
 
-export const waitForCanvas = (canvas, context, width, height) => {
-  return new Promise(resolve => {
-    const timerId = setInterval(() => {
-      if(isCanvasDrawn(context, width, height)){
-        resolve(canvas.toDataURL());
-        canvas.remove()
-        clearInterval(timerId);
-      }
-    }, 20);
-  })
-}
+export const waitForCanvas = (canvas, context) => new Promise(resolve => {
+  const timerId = setInterval(() => {
+    if(isCanvasDrawn(context, canvas.width, canvas.height)){
+      resolve(canvas.toDataURL());
+      clearInterval(timerId);
+    }
+  }, 10);
+})
 
 export const focusWindow = () => {
   chrome.windows.getCurrent(window => {

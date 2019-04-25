@@ -8,19 +8,19 @@ const addModeIndicator = (targetMode = null) => {
   indicatorContainer.style.position = 'fixed';
   indicatorContainer.style.bottom = '15px';
   indicatorContainer.style.right = '15px';
-  indicatorContainer.style.width = '280px';
-  indicatorContainer.style.height = '80px';
+  indicatorContainer.style.width = '300px';
+  indicatorContainer.style.height = '90px';
   indicatorContainer.style.border = '1px solid rgb(223, 223, 223)';
   indicatorContainer.style.boxShadow = 'rgba(0, 0, 0, 0.3) 7px 7px 10px 0px';
   indicatorContainer.style.zIndex = 2147483647;
 
   const recordingText = document.createElement('p');
-  recordingText.innerText = 'Superbot IDE is recording...';
+  recordingText.innerText = 'Superbot IDE is recording';
   recordingText.style.color = '#E80600';
   recordingText.style.marginBottom = '-3px';
   
   const modeText = document.createElement('p');
-  modeText.innerText = 'Current mode: ' + (targetMode !== null ? targetMode : 'recording');
+  modeText.innerText = targetMode
     
   fragment.appendChild(indicatorContainer)
   document.body.appendChild(fragment);
@@ -35,6 +35,7 @@ const addModeIndicator = (targetMode = null) => {
   iframe.contentDocument.body.style.textAlign = 'center';
   iframe.contentDocument.body.style.padding = '5px';
   iframe.contentDocument.body.style.backgroundColor = 'whitesmoke';
+  iframe.contentDocument.body.style.overflow = 'hidden';
   
   document.getElementById('superbot-mode-indicator').addEventListener(
     'mouseenter',() => {
