@@ -25,39 +25,162 @@ const renderResult = (source, template, result) => {
   }, 5000);
 }
 
-const readBase64Image = (dataUrl) => {
-  return new Promise(resolve => {
-    let tempIMG = new Image;
-    tempIMG.onload = () => {
-      resolve(cv.imread(tempIMG));
-      tempIMG = null;
+const readBase64Image = (dataUrl) => new Promise(resolve => {
+  let tempIMG = new Image;
+  tempIMG.onload = () => {
+    resolve(cv.imread(tempIMG));
+    tempIMG = null;
+  }
+  tempIMG.src = dataUrl;
+})
+
+const sortResults = (results) => {
+  const sorted = results.reduce((prev, current, index) => {
+    if(parseFloat((current.maxVal - prev.maxVal).toFixed(2)) > 0.02){
+      if(parseFloat((current.minVal - prev.minVal).toFixed(2)) > 0.00){
+        return { ...current, index }
+      } else {
+        return { ...prev, index }
+      }
+    } else {
+      if(parseFloat((current.maxVal - prev.maxVal).toFixed(2)) > 0.00 &&
+      parseFloat((current.minVal - prev.minVal).toFixed(2)) > 0.02){
+        return { ...current, index }
+      } else {
+        return { ...prev, index }
+      }
     }
-    tempIMG.src = dataUrl;
   })
+
+  return sorted;
 }
 
-const compareImages = async (img1, img2) => {
-  console.time('compare images took')
-  const matrices = await Promise.all([readBase64Image(img1), readBase64Image(img2)])
-  const results = await templateMatch(matrices);
-  console.timeEnd('compare images took')
-  return results;
+const parentsToDom = async (source, parents) => {
+  const matchesPromises = [];
+  for(let i = 0; i < parents.length; i++){
+    matchesPromises.push(templateMatch(source, parents[i]));
+    
+  }
+
+  const matches = await Promise.all(matchesPromises);
+  const matchesFiltered = [];
+  for(let i = 0; i < matches.length; i++){
+    if(matches[i] !== undefined && matches[i].minVal !== 1 && matches[i].maxVal > 0.85){
+      matchesFiltered.push(matches[i]);
+    }
+  }
+  console.log('parentsToDom raw:', matches)
+  console.log('parentsToDom filtered:', matchesFiltered)
+
+  if(matchesFiltered.length < 1){
+    return null;
+  } else {
+    const bestMatch = sortResults(matchesFiltered);
+    console.log('Best parent to DOM match:', bestMatch)
+    return bestMatch;
+  }
 }
 
-const templateMatch = async (matrices) => {
-  const dest = new cv.Mat();
-  const mask = new cv.Mat();
-  cv.matchTemplate(matrices[0], matrices[1], dest, cv.TM_CCOEFF_NORMED);
-  const result = cv.minMaxLoc(dest, mask);
-  result.width = matrices[1].size().width;
-  result.height = matrices[1].size().height;
+const targetToParents = async (parents, targetElement) => {
+  const matchesPromises = [];
+  for(let i = 0; i < parents.length; i++){
+    matchesPromises.push(templateMatch(parents[i], targetElement));
+  }
 
-  //TODO: for debugging purposes, remove...
-  renderResult(matrices[0], matrices[1], result);
+  const matches = await Promise.all(matchesPromises);
+  const matchesFiltered = [];
+  for(let i = 0; i < matches.length; i++){
+    if(matches[i] !== undefined && matches[i].minVal !== 1 && matches[i].maxVal > 0.9){
+      matchesFiltered.push(matches[i]);
+    }
+  }
+
+  console.log('targetToParents raw:', matches)
+  console.log('targetToParents:', matchesFiltered)
+
+  if(matchesFiltered.length < 1){
+    return null;
+  } else {
+    const bestMatch = sortResults(matchesFiltered);
+    console.log('Best target to parent match:', bestMatch)
+    return bestMatch;
+  }
+}
+
+const compareImages = async (sourceData, templatesData) => {
+  //Convert base64 data to matrices
+  const matricesPromises = [];
+  for(let i = 0; i < templatesData.length; i++){
+    matricesPromises.push(readBase64Image(templatesData[i]));
+  }
+  const source = await readBase64Image(sourceData);
+  const templates = await Promise.all(matricesPromises);
+  const targetEl = templates.shift();
+
+  //Remove falty templates
+  for(let i = 0; i < templates.length; i++){
+    if(source.cols < templates[i].cols || source.rows < templates[i].rows){
+      templates[i].delete();
+      templates.splice(i, 1);
+    }
+  }
+
+  //Test if opencv can identify target element straight away
+  const targetElementResult = await templateMatch(source, targetEl);
+  //const copiedSource = source.clone();
+  //renderResult(copiedSource, targetEl, targetElementResult)
+  //Uncomment line below to test fallback
+  //targetElRes.maxVal -= 1.0;
   
-  dest.delete();
-  mask.delete();
-  return result;
+  if(parseFloat(targetElementResult.maxVal.toFixed(2)) > 0.9){
+    const targetElementCoordinates = {
+      x: targetElementResult.maxLoc.x + (targetElementResult.width / 2),
+      y: targetElementResult.maxLoc.y + (targetElementResult.height / 2),
+    };
+    console.log('targetElementCoordinates:', targetElementCoordinates)
+    return targetElementCoordinates;
+  }
+
+  //Compare target element's parents to DOM
+  //Compare target element to it's parents
+
+  const results = await Promise.all([parentsToDom(source, templates), targetToParents(templates, targetEl)]);
+  console.log('Fallback results:', results)
+
+  source.delete();
+  targetEl.delete();
+  for(let i = 0; i < templates.length; i++){
+    templates[i].delete();
+  }
+
+  if(results[0] !== null && results[1] !== null){
+    const targetElementCoordinates = {
+      x: (results[0].maxLoc.x + results[1].maxLoc.x) + (results[1].width / 2),
+      y: (results[0].maxLoc.y + results[1].maxLoc.y) + (results[1].height / 2),
+    };
+    console.log('targetElementCoordinates:', targetElementCoordinates)
+    return targetElementCoordinates;
+  } else {
+    return null;
+  }
 }
+
+const templateMatch = (source, template) => new Promise(resolve => {
+  try {
+    const dest = new cv.Mat();
+    const mask = new cv.Mat();
+    cv.matchTemplate(source, template, dest, cv.TM_CCOEFF_NORMED);
+    const result = cv.minMaxLoc(dest, mask);
+    result.width = template.size().width;
+    result.height = template.size().height;
+      
+    dest.delete();
+    mask.delete();
+    resolve(result);
+  } catch(e) {
+    resolve(undefined);
+    console.log('Error during template match:', e)
+  }
+})
 
 export default compareImages;
