@@ -132,8 +132,10 @@ export default class SuperbotRecorder {
         chrome.debugger.attach(this.debugTarget, '1.3', () => {
           if(chrome.runtime.lastError === undefined){
             chrome.debugger.sendCommand(this.debugTarget, 'Runtime.enable', () => {
-              clearInterval(debuggerTimer);
-              resolve(true);
+              chrome.debugger.sendCommand(this.debugTarget, 'DOM.enable', () => {
+                clearInterval(debuggerTimer);
+                resolve(true);
+              })
             });
           } else {
             console.log('attachDebugger error:', chrome.runtime.lastError);
