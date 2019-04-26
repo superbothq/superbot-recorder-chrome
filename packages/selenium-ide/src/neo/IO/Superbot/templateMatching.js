@@ -35,20 +35,28 @@ const readBase64Image = (dataUrl) => new Promise(resolve => {
 })
 
 const sortResults = (results) => {
-  const sorted = results.reduce((prev, current, index) => {
-    if(parseFloat((current.maxVal - prev.maxVal).toFixed(2)) > 0.02){
-      if(parseFloat((current.minVal - prev.minVal).toFixed(2)) > 0.00){
-        return { ...current, index }
+  const sorted = results.reduce((res, iter, index) => {
+    try {
+      //Copy variables to avoid changing the original values
+      const prev = {...res}
+      const current = {...iter}
+      //If minVal gained > maxVal lost -> select current
+      if(prev.maxVal > current.maxVal){
+        if(((current.minVal) - (prev.minVal)) > (prev.maxVal - current.maxVal)){
+          return { ...iter, index }
       } else {
-        return { ...prev, index }
+          return { ...res, index }
       }
     } else {
-      if(parseFloat((current.maxVal - prev.maxVal).toFixed(2)) > 0.00 &&
-      parseFloat((current.minVal - prev.minVal).toFixed(2)) > 0.02){
-        return { ...current, index }
+        //If maxVal gained > minVal lost -> select current
+        if((-(current.minVal) - -(prev.minVal)) < (current.maxVal - prev.maxVal)){
+          return { ...iter,  index }
       } else {
-        return { ...prev, index }
+          return { ...res, index }
       }
+    }
+    } catch(e) {
+      console.log('sortResults error:', e)
     }
   })
 
