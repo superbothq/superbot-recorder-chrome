@@ -29,11 +29,13 @@ import SaveButton from '../ActionButtons/Save'
 //import MoreButton from '../ActionButtons/More'
 //import ListMenu, { ListMenuItem } from '../ListMenu'
 //import { showChangelog } from '../Changelog'
+import { parse } from 'modifier-keys'
 import GaugeMenu from '../GaugeMenu'
 import SpeedGauge from '../ActionButtons/SpeedGauge'
 import PlayCurrent from '../ActionButtons/PlayCurrent'
-//import Record from '../ActionButtons/Record'
 import BetterRecord from '../ActionButtons/BetterRecord'
+import Stop from '../ActionButtons/Stop'
+import Pause from '../ActionButtons/Pause'
 import Clear from '../ActionButtons/Clear'
 import LogoutButton from '../ActionButtons/Logout'
 
@@ -108,8 +110,8 @@ export default class ProjectHeader extends React.Component {
             Test List
           </a>
           <BetterRecord
-            disabled={PlaybackState.isPlaying || !UiState.selectedTest.test}
-            isRecording={UiState.isSuperbotRecording}
+            disabled={PlaybackState.isPlaying}
+            isRecording={UiState.isRecording}
             onClick={UiState.toggleSuperbotRecording}
           />
           <div
@@ -122,18 +124,48 @@ export default class ProjectHeader extends React.Component {
               height: 'initial'
             }}
           />
-          <PlayCurrent
-            isActive={!PlaybackState.paused && PlaybackState.isPlayingTest}
-            disabled={UiState.isRecording}
-            onClick={this.playAll}
-            style={{
-              fontSize: 26,
-              border: 0,
-              margin: '0 5px 0 5px',
-              width: 'initial',
-              height: 'initial'
-            }}
-          />
+          {PlaybackState.isPlaying ? (
+            <Stop
+              onClick={() => {
+                PlaybackState.abortPlaying()
+              }}
+            />
+          ) : (
+            <PlayCurrent
+              isActive={!PlaybackState.paused && PlaybackState.isPlayingTest}
+              disabled={UiState.isRecording}
+              onClick={this.playAll}
+              style={{
+                fontSize: 26,
+                border: 0,
+                margin: '0 5px 0 5px',
+                width: 'initial',
+                height: 'initial'
+              }}
+            />
+          )}
+          {PlaybackState.isPlaying ? (
+            <Pause
+              isActive={PlaybackState.paused}
+              data-tip={
+                !PlaybackState.paused
+                  ? `<p>Pause test execution <span style="color: #929292;padding-left: 5px;">${parse(
+                      'p',
+                      { primaryKey: true }
+                    )}</span></p>`
+                  : `<p>Resume test execution <span style="color: #929292;padding-left: 5px;">${parse(
+                      'p',
+                      { primaryKey: true }
+                    )}</span></p>`
+              }
+              onClick={PlaybackState.pauseOrResume}
+              style={{
+                marginRight: '10px'
+              }}
+            />
+          ) : null}
+
+
           <GaugeMenu
             opener={<SpeedGauge
                       speed={UiState.gaugeSpeed}
