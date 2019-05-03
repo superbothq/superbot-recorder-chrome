@@ -22,7 +22,7 @@ export default class SuperbotRecorder {
     chrome.runtime.onMessage.addListener(this.messageHandler)
     chrome.debugger.onEvent.addListener(this.debuggerCommandHandler)
     chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-      if(!UiState.isSuperbotRecording || this.currentWindow === null || this.currentTab === null) return;
+      if(!UiState.isRecording || this.currentWindow === null || this.currentTab === null || UiState.recordingPaused === true) return;
 
       if(this.debugTarget !== null && !tab.url.includes('chrome://') && !tab.url.includes('chrome-extension://')){
         if(UiState.displayedTest.commands.length < 1){
@@ -247,6 +247,8 @@ export default class SuperbotRecorder {
   }
 
   debuggerCommandHandler = (sender, method, params) => {
+    if(UiState.recordingPaused) return;
+
     if(method === 'Overlay.inspectNodeRequested'){
       try {
         Promise.all([this.toggleDebuggerHighlight(false), this.toggleRecordingIndicator(false)]).then(() => {

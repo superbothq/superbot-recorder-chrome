@@ -23,7 +23,6 @@ import { createPlaybackTree } from '../../playback/playback-tree'
 import { ControlFlowCommandChecks } from '../../models/Command'
 import Logger from '../../stores/view/Logs'
 import { isProduction } from '../../../common/utils'
-import { waitForCanvas } from '../Superbot/helpers';
 import compareImages from '../../IO/Superbot/templateMatching'
 
 let baseUrl = ''

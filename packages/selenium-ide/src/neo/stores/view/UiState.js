@@ -45,8 +45,6 @@ class UiState {
   @observable
   isRecording = false
   @observable
-  isSuperbotRecording = false
-  @observable
   lastRecordedCommand = null
   @observable
   isSelectingTarget = false
@@ -335,7 +333,7 @@ class UiState {
 
   @action.bound
   async toggleSuperbotRecording() {
-    await (this.isSuperbotRecording
+    await (this.isRecording
       ? this.stopSuperbotRecording()
       : this.startSuperbotRecording())
   }
@@ -406,8 +404,8 @@ class UiState {
   }
 
   @action.bound
-  _setSuperbotRecordingState(isRecording) {
-    this.isSuperbotRecording = isRecording
+  _setSuperbotRecordingState(state) {
+    this.isRecording = state
   }
 
   @action.bound

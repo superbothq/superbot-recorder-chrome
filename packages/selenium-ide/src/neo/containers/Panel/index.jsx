@@ -466,7 +466,7 @@ export default class Panel extends React.Component {
       }
     }).then(res => {
       if(res.status === 200){
-        if(UiState.isSuperbotRecording){
+        if(UiState.isRecording){
           UiState.toggleSuperbotRecording();
         }
         this.setState({
