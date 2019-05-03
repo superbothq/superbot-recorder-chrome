@@ -514,7 +514,8 @@ export default class Panel extends React.Component {
   }
  
   render() {
-    if(this.state.user === null){
+    console.log('state:', this.state)
+    if(this.state.user === null || this.state.user.allOrganizations === undefined){
       return (
         <LoginPage
           handleLogin={this.handleLogin}
@@ -573,6 +574,7 @@ export default class Panel extends React.Component {
               logout={this.logoutUser}
               clearAllCommands={UiState.displayedTest.clearAllCommands}
               disableUploadWarning={this.disableUploadWarning}
+              organizationId={this.state.user.allOrganizations[0].id}
             />
             <Console
               url={this.state.project.url}

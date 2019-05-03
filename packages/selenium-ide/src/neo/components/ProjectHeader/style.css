@@ -13,6 +13,9 @@
 }
 
 .header .title {
+  color: #333333;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Open Sans, Ubuntu, Fira Sans, Helvetica Neue, sans-serif;
   display: inline-block;
   border: 1px transparent solid;
   border-radius: 4px;
@@ -23,6 +26,17 @@
   font-weight: bold;
   cursor: pointer;
   min-width: 143px;
+}
+
+.header .testlist-link {
+  color: #333;
+  cursor: pointer;
+  margin-right: 10px;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Open Sans, Ubuntu, Fira Sans, Helvetica Neue, sans-serif;
+  text-transform: uppercase;
+  font-weight: 700;
+  border-bottom: 2px solid #40a6ff;
+  padding-top: 1px;
 }
 
 .header .title ~ i {

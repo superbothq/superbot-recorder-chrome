@@ -101,6 +101,12 @@ export default class ProjectHeader extends React.Component {
           <i className="si-pencil" />
         </div>
         <span className="buttons">
+          <a className='testlist-link'
+            href={`https://superbot.cloud/organizations/${this.props.organizationId}/tests`}
+            target="_blank"
+          >
+            Test List
+          </a>
           <BetterRecord
             disabled={PlaybackState.isPlaying || !UiState.selectedTest.test}
             isRecording={UiState.isSuperbotRecording}
