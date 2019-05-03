@@ -492,6 +492,16 @@ Selenium.prototype.doAssertText = async function(image = null, locator, value) {
   }
 }
 
+Selenium.prototype.doScroll = async function(image, locator, value) {
+  const pxPerStep = 20;
+  const steps = Array(Math.ceil(parseInt(value)/pxPerStep))
+  steps.fill(0)
+  for(const s in steps){
+    window.scrollTo(0, window.pageYOffset + pxPerStep);
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+}
+
 Selenium.prototype.doAssertNotText = function(locator, value) {
   const element = this.findElementVisible(locator)
   const visibleText = bot.dom.getVisibleText(element)

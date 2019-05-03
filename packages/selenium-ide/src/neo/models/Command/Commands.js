@@ -936,4 +936,13 @@ export const Commands = [
       value: ArgTypes.loopLimit,
     },
   ],
+  [
+    'scroll',
+    {
+      name: 'scroll',
+      description: 'Scroll page up or down by n amount.',
+      target: ArgTypes.locator,
+      value: ArgTypes.value
+    }
+  ],
 ]

@@ -68,7 +68,7 @@ export default class SuperbotRecorder {
 
   stateChecks = () => {
     const stateChecksInterval = setInterval(() => {
-      if(UiState.isSuperbotRecording === false){
+      if(UiState.isRecording === false){
         this.stopRecording()
         return clearInterval(stateChecksInterval);
       }
@@ -187,33 +187,43 @@ export default class SuperbotRecorder {
   }
 
   messageHandler = async (message, sender, sendResponse) => {
-    if(this.currentWindow === null || message.type === undefined) return;
-
+    if(this.currentWindow === null || message.type === undefined || UiState.recordingPaused) return;
+    console.log('message received:', message)
     switch(message.type){
       case 'command':
-        if(message.command === 'type' || message.command === 'sendKeys'){
-          this.toggleNotification(`${message.command} recorded!`);
-          if(isDuplicateCommand(message)){
-            const test = UiState.displayedTest;
-            test.removeCommand(test.commands[test.commands.length-1])
-          }
-          if(message.command === 'sendKeys'){
-            const test = UiState.displayedTest;
-            const lastCommand = test.commands[test.commands.length-1];
-            if(lastCommand.command === 'type'){
-              message.targets = lastCommand.targets;
+        switch(message.command) {
+          case 'type':
+          case 'sendKeys':
+            this.toggleNotification(`${message.command} recorded!`);
+            if(isDuplicateCommand(message)){
+              const test = UiState.displayedTest;
+              test.removeCommand(test.commands[test.commands.length-1])
             }
-          }
-          commandHandler(message.command, message.targets, message.value);
-        } else {
-          console.log('click recorded:', message);
-          console.log('current temp images:', { image: this.recordingTempImage })
-          commandHandler(message.command, message.targets, message.value, this.recordingTempImage);
-          console.log('message.targets:', message.targets)
-          commandPreview({ command: 'click', target: message.targets[0], value: message.value, image: this.recordingTempImage[0] });
-          this.recordingTempImage = null;
-          this.currentMode = 'recording: select target';
-          chrome.tabs.sendMessage(this.currentTab.id, { type: 'updateMode', mode: this.currentMode });
+            if(message.command === 'sendKeys'){
+              const test = UiState.displayedTest;
+              const lastCommand = test.commands[test.commands.length-1];
+              if(lastCommand.command === 'type'){
+                message.targets = lastCommand.targets;
+              }
+            }
+            commandHandler(message.command, message.targets, message.value);
+          break;
+
+          case 'scroll':
+            preprocessScroll(message);
+            commandHandler(message.command, message.targets, message.value);
+          break;
+
+          case 'click':
+            console.log('click recorded:', message);
+            console.log('current temp images:', { image: this.recordingTempImage })
+            commandHandler(message.command, message.targets, message.value, this.recordingTempImage);
+            console.log('message.targets:', message.targets)
+            commandPreview({ command: 'click', target: message.targets[0], value: message.value, image: this.recordingTempImage[0] });
+            this.recordingTempImage = null;
+            this.currentMode = 'recording: select target';
+            chrome.tabs.sendMessage(this.currentTab.id, { type: 'updateMode', mode: this.currentMode });
+          break;
         }
       break;
 
@@ -274,8 +284,7 @@ export default class SuperbotRecorder {
                   }
                   console.log('elements:  ', [...elements])
 
-                  splicedParents = elements.filter(el => typeof el.click === 'function' &&
-                    el.clientWidth > 0 &&
+                  splicedParents = elements.filter(el => el.clientWidth > 0 &&
                     el.clientHeight > 0 &&
                     el.nodeName !== 'HTML' &&
                     el.nodeName !== 'BODY')
@@ -477,5 +486,15 @@ const isDuplicateCommand = (message) => {
     return false;
   } else {
     return message.targets[0][0] === lastCommand.target;
+  }
+}
+
+const preprocessScroll = (message) => {
+  const targetTest = UiState.displayedTest;
+  const lastCommand = targetTest.commands[targetTest.commands.length-1]
+  if(message.command !== lastCommand.command){
+    return;
+  } else {
+    targetTest.removeCommand(targetTest.commands[targetTest.commands.length-1])
   }
 }

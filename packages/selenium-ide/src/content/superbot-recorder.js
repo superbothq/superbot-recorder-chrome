@@ -144,7 +144,10 @@ const attachEventHandlers = () => {
     recordCommand('click', locatorBuilders.buildAll(event.target), '', coordinates);
   })
   
-  addEventHandler('mousemove', event => {
+  document.addEventListener('scroll', event => {
+    //console.log('document scroll event!')
+    recordCommand('scroll', [['window']], window.pageYOffset.toString())
+  }, true);
     if(currentMode !== 'recording: click element') return;
 
     chrome.runtime.sendMessage({ type: 'updateMousePos', coordinates: { x: event.clientX, y: event.clientY, time: new Date().getTime() }})
