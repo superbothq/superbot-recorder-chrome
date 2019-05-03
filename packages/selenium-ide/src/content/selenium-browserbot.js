@@ -1726,8 +1726,6 @@ BrowserBot.prototype.findElement = async function(images = null, locator, win) {
     res = await this.matchImages(images);
     if(res !== undefined && res !== null){
       break;
-    } else {
-      await new Promise(resolve => setTimeout(resolve, 500))
     }
   }
 

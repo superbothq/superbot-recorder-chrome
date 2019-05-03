@@ -473,10 +473,21 @@ Selenium.prototype.findElementVisible = async function(image = null, locator) {
   return element
 }
 
-Selenium.prototype.doAssertText = function(locator, value) {
-  const element = this.findElementVisible(locator)
+Selenium.prototype.doAssertText = async function(image = null, locator, value) {
+  const tries = [1, 2, 3, 4, 5]
+  let element = null
+  for(const n of tries){
+    console.log(`assertText tries: ${n}/${tries.length}`)
+    element = await this.findElementVisible(image, locator);
+    if(element !== null && element !== undefined){
+      break;
+    }
+  }
+
   const visibleText = bot.dom.getVisibleText(element)
-  if (!visibleText.includes(value)) {
+  if(visibleText.includes(value)){
+    return;
+  } else {
     throw new Error(`Actual value "${visibleText}" did not match "${value}"`)
   }
 }
