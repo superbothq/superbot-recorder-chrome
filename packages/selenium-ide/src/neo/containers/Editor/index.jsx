@@ -17,11 +17,12 @@
 
 import React from 'react'
 import PropTypes from 'prop-types'
+import { action } from 'mobx'
 import { observer } from 'mobx-react'
 import { modifier } from 'modifier-keys'
 import UiState from '../../stores/view/UiState'
-import ToolBar from '../../components/ToolBar'
-import UrlBar from '../../components/UrlBar'
+//import ToolBar from '../../components/ToolBar'
+//import UrlBar from '../../components/UrlBar'
 import TestTable from '../../components/TestTable'
 import CommandForm from '../../components/CommandForm'
 import './style.css'
@@ -39,6 +40,7 @@ export default class Editor extends React.Component {
     super(props)
     this.addCommand = this.addCommand.bind(this)
     this.removeCommand = this.removeCommand.bind(this)
+    this.clearCommandsAfter = this.clearCommandsAfter.bind(this)
   }
   addCommand(index, command) {
     if (command) {
@@ -53,6 +55,22 @@ export default class Editor extends React.Component {
   removeCommand(index, command) {
     const { test } = this.props
     test.removeCommand(command)
+    if (UiState.selectedCommand === command) {
+      if (test.commands.length > index) {
+        UiState.selectCommand(test.commands[index])
+      } else if (test.commands.length) {
+        UiState.selectCommand(test.commands[test.commands.length - 1])
+      } else {
+        UiState.selectCommand(UiState.pristineCommand)
+      }
+    }
+  }
+
+  @action.bound
+  clearCommandsAfter(index, command) {
+    console.log('clearCommandsAfter props:', this.props)
+    const { test } = this.props
+    test.commands.length = index
     if (UiState.selectedCommand === command) {
       if (test.commands.length > index) {
         UiState.selectCommand(test.commands[index])
@@ -102,6 +120,7 @@ export default class Editor extends React.Component {
           clearAllCommands={
             this.props.test ? this.props.test.clearAllCommands : null
           }
+          clearCommandsAfter={this.clearCommandsAfter}
           swapCommands={this.props.test ? this.props.test.swapCommands : null}
         />
         <CommandForm

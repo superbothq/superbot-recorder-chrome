@@ -150,6 +150,7 @@ export default class TestTable extends React.Component {
                       moveSelection={UiState.selectCommandByIndex}
                       addCommand={this.props.addCommand}
                       remove={this.props.removeCommand}
+                      clearCommandsAfter={this.props.clearCommandsAfter}
                       swapCommands={this.props.swapCommands}
                       copyToClipboard={UiState.copyToClipboard}
                       pasteFromClipboard={UiState.pasteFromClipboard}

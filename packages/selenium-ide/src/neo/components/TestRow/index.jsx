@@ -336,6 +336,11 @@ class TestRow extends React.Component {
               Execute this command
             </ListMenuItem>
           )}
+          <ListMenuItem
+            onClick={() => this.props.clearCommandsAfter(this.props.index, this.props.command)}
+          >
+            Clear commands from here
+          </ListMenuItem>
         </ListMenu>
       ) : null
     //setting component of context menu.
