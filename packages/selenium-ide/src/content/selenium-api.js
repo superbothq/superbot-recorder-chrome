@@ -492,6 +492,37 @@ Selenium.prototype.doAssertText = async function(image = null, locator, value) {
   }
 }
 
+Selenium.prototype.doDrag = async function(image, locator, value) {
+  let element = await this.browserbot.findElement(null, locator)
+  if(element === null){
+    throw new Error(`Element with locator: ${locator} not found!`)
+  }
+  const path = JSON.parse(value)
+  this.browserbot.triggerMouseEvent(element, 'mousedown', true, element.clientX, element.clientY);
+  let lastTime = null;
+  for(const it in path){
+    await new Promise(resolve => {
+      this.browserbot.triggerMouseEvent(element, 'mousemove', true, path[it].pos.x, path[it].pos.y);
+      if(lastTime !== null){
+        const waitTime = path[it].time - lastTime;
+        setTimeout(resolve, waitTime);
+        lastTime = path[it].time;
+      } else {
+        lastTime = path[it].time;
+        resolve();
+      }
+    })
+  }
+
+  this.browserbot.triggerMouseEvent(
+    element,
+    'mouseup',
+    true,
+    path[path.length - 1].pos.x,
+    path[path.length - 1].pos.y
+  )
+}
+
 Selenium.prototype.doScroll = async function(image, locator, value) {
   const pxPerStep = 20;
   const steps = Array(Math.ceil(parseInt(value)/pxPerStep))
