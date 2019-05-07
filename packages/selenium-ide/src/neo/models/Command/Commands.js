@@ -945,4 +945,13 @@ export const Commands = [
       value: ArgTypes.value
     }
   ],
+  [
+    'drag',
+    {
+      name: 'drag',
+      description: 'Drag cursor on page',
+      target: ArgTypes.locator,
+      value: ArgTypes.coord
+    }
+  ]
 ]

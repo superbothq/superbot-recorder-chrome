@@ -214,6 +214,11 @@ export default class SuperbotRecorder {
             commandHandler(message.command, message.targets, message.value);
           break;
 
+          case 'drag':
+            console.log('message received:', message)
+            this.toggleNotification(`${message.command} recorded!`);
+            commandHandler(message.command, message.targets, message.value);
+          break
           case 'click':
             console.log('click recorded:', message);
             console.log('current temp images:', { image: this.recordingTempImage })

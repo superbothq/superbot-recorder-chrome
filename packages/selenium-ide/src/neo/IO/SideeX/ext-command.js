@@ -234,7 +234,7 @@ export default class ExtCommand {
     }
     let tabId = this.getCurrentPlayingTabId()
     let frameId = this.getCurrentPlayingFrameId()
-
+    
     return browser.tabs
       .sendMessage(
         tabId,
