@@ -120,8 +120,8 @@ export default class Command {
     if(this.command === 'drag'){
       this.value = JSON.stringify(value)
     } else {
-    this.value = value ? value.replace(/\n/g, '\\n') : ''
-  }
+      this.value = value ? value.replace(/\n/g, '\\n') : ''
+    }
   }
 
   @action.bound

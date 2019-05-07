@@ -88,7 +88,7 @@ const advanceCurrentMode = (targetMode = null) => {
         currentMode = modes[0];
       } else {
         currentMode = modes[index + 1];
-      }
+      } 
     }
     modeIndicator.contentDocument.body.children[1].innerText = currentMode;
     chrome.runtime.sendMessage({ type: 'setMode', mode: currentMode });
@@ -140,7 +140,7 @@ const attachEventHandlers = () => {
     const coordinates = event.target.getBoundingClientRect();
     recordCommand('click', locatorBuilders.buildAll(event.target), '', coordinates);
   }, true)
-  
+
   document.addEventListener('scroll', event => {
     //console.log('document scroll event!')
     recordCommand('scroll', [['window']], window.pageYOffset.toString())
@@ -193,7 +193,19 @@ const attachEventHandlers = () => {
     dragCoordinates = [];
   }, true)
 
-  addEventHandler('keydown', event => {
+  let dragStartTarget = null;
+  document.addEventListener('dragstart', event => {
+    dragStartTarget = event.target;
+  }, true)
+
+  document.addEventListener('drop', event => {
+    if (dragStartTarget && dragStartTarget !== event.target && event.button == 0){
+      recordCommand('dragAndDropToObject', locatorBuilders.buildAll(dragStartTarget), locatorBuilders.build(event.target));
+    }
+    dragStartTarget = null;
+  }, true)
+
+  document.addEventListener('keydown', event => {
     if(event.keyCode !== 17) return;
 
       event.preventDefault();
@@ -201,11 +213,7 @@ const attachEventHandlers = () => {
       event.stopImmediatePropagation();
 
       advanceCurrentMode();
-  })
-
-  for(let i = 0; i < EventHandlers.length; i++){
-    window.addEventListener(EventHandlers[i].type, EventHandlers[i].handler, true)
-  }
+  }, true)
 }
 
 chrome.runtime.onMessage.addListener(messageHandler)

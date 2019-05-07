@@ -188,7 +188,6 @@ export default class SuperbotRecorder {
 
   messageHandler = async (message, sender, sendResponse) => {
     if(this.currentWindow === null || message.type === undefined || UiState.recordingPaused) return;
-    console.log('message received:', message)
     switch(message.type){
       case 'command':
         switch(message.command) {
@@ -219,6 +218,12 @@ export default class SuperbotRecorder {
             this.toggleNotification(`${message.command} recorded!`);
             commandHandler(message.command, message.targets, message.value);
           break
+
+          case 'dragAndDropToObject':
+            this.toggleNotification(`${message.command} recorded!`);
+            commandHandler(message.command, message.targets, message.value);
+          break;
+
           case 'click':
             console.log('click recorded:', message);
             console.log('current temp images:', { image: this.recordingTempImage })
@@ -377,7 +382,7 @@ export default class SuperbotRecorder {
                 this.recordingTempImage = elementImages;
               break;
 
-              default: console.log('Mode not recognized:', this.currentMode); return;
+              default: console.log('Debugger mode not recognized:', this.currentMode); return;
             }
           
             this.toggleDebuggerHighlight(true);
