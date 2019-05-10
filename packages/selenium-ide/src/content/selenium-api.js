@@ -2573,12 +2573,12 @@ Selenium.prototype.getMouseSpeed = function() {
   return this.mouseSpeed
 }
 
-Selenium.prototype.doDragAndDrop = async function(image = null, locator, movementsString) {
+Selenium.prototype.doDragAndDrop = async function(locator, movementsString) {
   /** Drags an element a certain distance and then drops it
    * @param locator an element locator
    * @param movementsString offset in pixels from the current location to which the element should be moved, e.g., "+70,-300"
    */
-  let element = await this.browserbot.findElement(image, locator)
+  let element = await this.browserbot.findElement(null, locator)
   let clientStartXY = getClientXY(element)
   let clientStartX = clientStartXY[0]
   let clientStartY = clientStartXY[1]
@@ -2645,6 +2645,7 @@ Selenium.prototype.doDragAndDrop = async function(image = null, locator, movemen
 }
 
 Selenium.prototype.doDragAndDropToObject = async function(
+  image,
   locatorOfObjectToBeDragged,
   locatorOfDragDestinationObject
 ) {
@@ -2653,7 +2654,8 @@ Selenium.prototype.doDragAndDropToObject = async function(
    * @param locatorOfObjectToBeDragged an element to be dragged
    * @param locatorOfDragDestinationObject an element whose location (i.e., whose center-most pixel) will be the point where locatorOfObjectToBeDragged  is dropped
    */
-  if (!await this.browserbot.findElement(locatorOfObjectToBeDragged).draggable) {
+  let elem = await this.browserbot.findElement(null, locatorOfObjectToBeDragged);
+  if (!elem.draggable) {
     //origin code
     let startX = this.getElementPositionLeft(locatorOfObjectToBeDragged)
     let startY = this.getElementPositionTop(locatorOfObjectToBeDragged)
@@ -2679,8 +2681,8 @@ Selenium.prototype.doDragAndDropToObject = async function(
     this.doDragAndDrop(locatorOfObjectToBeDragged, movementsString)
   } else {
     //DragAndDropExt, Shuo-Heng Shih, SELAB, CSIE, NCKU, 2016/09/29
-    let element = await this.browserbot.findElement(locatorOfObjectToBeDragged)
-    let target = await this.browserbot.findElement(locatorOfDragDestinationObject)
+    let element = await this.browserbot.findElement(null, locatorOfObjectToBeDragged)
+    let target = await this.browserbot.findElement(null, locatorOfDragDestinationObject)
     this.browserbot.triggerDragEvent(element, target)
   }
 }
@@ -2798,7 +2800,7 @@ Selenium.prototype._isCommentOrEmptyTextNode = function(node) {
   )
 }
 
-Selenium.prototype.getElementPositionLeft = async function(image = null, locator) {
+Selenium.prototype.getElementPositionLeft = async function(locator) {
   /**
    * Retrieves the horizontal position of an element
    *
@@ -2807,7 +2809,7 @@ Selenium.prototype.getElementPositionLeft = async function(image = null, locator
    */
   let element
   if ('string' == typeof locator) {
-    element = await this.browserbot.findElement(image, locator)
+    element = await this.browserbot.findElement(null, locator)
   } else {
     element = locator
   }
@@ -2839,7 +2841,7 @@ Selenium.prototype.getElementPositionLeft = async function(image = null, locator
   return x
 }
 
-Selenium.prototype.getElementPositionTop = async function(image = null, locator) {
+Selenium.prototype.getElementPositionTop = async function(locator) {
   /**
    * Retrieves the vertical position of an element
    *
@@ -2848,7 +2850,7 @@ Selenium.prototype.getElementPositionTop = async function(image = null, locator)
    */
   let element
   if ('string' == typeof locator) {
-    element = await this.browserbot.findElement(image, locator)
+    element = await this.browserbot.findElement(null, locator)
   } else {
     element = locator
   }
@@ -2894,25 +2896,25 @@ Selenium.prototype.getElementPositionTop = async function(image = null, locator)
   return y
 }
 
-Selenium.prototype.getElementWidth = async function(image = null, locator) {
+Selenium.prototype.getElementWidth = async function(locator) {
   /**
    * Retrieves the width of an element
    *
    * @param locator an <a href="#locators">element locator</a> pointing to an element
    * @return number width of an element in pixels
    */
-  let element = await this.browserbot.findElement(image, locator)
+  let element = await this.browserbot.findElement(null, locator)
   return element.offsetWidth
 }
 
-Selenium.prototype.getElementHeight = async function(image = null, locator) {
+Selenium.prototype.getElementHeight = async function(locator) {
   /**
    * Retrieves the height of an element
    *
    * @param locator an <a href="#locators">element locator</a> pointing to an element
    * @return number height of an element in pixels
    */
-  let element = await this.browserbot.findElement(image, locator)
+  let element = await this.browserbot.findElement(null, locator)
   return element.offsetHeight
 }
 
