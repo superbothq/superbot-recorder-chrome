@@ -18,11 +18,23 @@ export default class SuperbotRecorder {
     this.mouseCoordinates = []
     this.currentMode = 'wait for element';
     this.recordingTempImage = null;
+    this.lastUrl = null;
 
     chrome.runtime.onMessage.addListener(this.messageHandler)
     chrome.debugger.onEvent.addListener(this.debuggerCommandHandler)
     chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
       if(!UiState.isRecording || this.currentWindow === null || this.currentTab === null || UiState.recordingPaused === true) return;
+
+      if(changeInfo.url && this.lastUrl !== null){
+        const hostname = new URL(this.lastUrl).hostname;
+        if(hostname && !tab.url.includes(hostname)){
+          recordCommand('open', [[tab.url]], '')
+        }
+      }
+
+      if(changeInfo.url){
+        this.lastUrl = changeInfo.url;
+      }
 
       if(this.debugTarget !== null && !tab.url.includes('chrome://') && !tab.url.includes('chrome-extension://')){
         if(UiState.displayedTest.commands.length < 1){
