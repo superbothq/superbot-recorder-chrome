@@ -70,7 +70,7 @@ export default class Editor extends React.Component {
   clearCommandsAfter(index, command) {
     console.log('clearCommandsAfter props:', this.props)
     const { test } = this.props
-    test.commands.length = index
+    test.commands.length = index + 1;
     if (UiState.selectedCommand === command) {
       if (test.commands.length > index) {
         UiState.selectCommand(test.commands[index])
