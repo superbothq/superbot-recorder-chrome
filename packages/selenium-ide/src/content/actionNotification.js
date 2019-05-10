@@ -7,20 +7,20 @@ const addActionNotification = (message) => {
   nc.style.position = 'fixed';
   nc.style.top = '15px'; //-80px
   nc.style.left = '15px';
-  nc.style.width = '280px';
-  nc.style.height = '55px';
+  nc.style.width = '290px';
+  nc.style.height = '60px';
   nc.style.zIndex = 2147483647;
-  nc.style.backgroundColor = '#39e491';
-  nc.style.border = '1px solid #00c163';
+  nc.style.backgroundColor = '#fff';
+  nc.style.border = '2px solid #23a3f3';
   nc.style.borderRadius = '2px';
-  //nc.style.animation = '2s bounce infinite';
+  nc.style.boxShadow = '3px 3px 5px 0px rgba(0,0,0,0.5)';
   
   const msgText = document.createElement('p');
   msgText.innerText = message;
   msgText.style.textAlign = 'center';
-  msgText.style.fontSize = '18px';
-  msgText.style.margin = '16px 0 0 0';
-  msgText.style.color = '#fff';
+  msgText.style.fontSize = '15px';
+  msgText.style.margin = '21px 0 0 0';
+  msgText.style.color = '#333';
   msgText.style.fontFamily = 'Helvetica';
 
   const fadeOutBar = document.createElement('div');
@@ -29,7 +29,7 @@ const addActionNotification = (message) => {
   fadeOutBar.style.position = 'absolute';
   fadeOutBar.style.left = '0px';
   fadeOutBar.style.bottom = '0px';
-  fadeOutBar.style.backgroundColor = '#07a558';
+  fadeOutBar.style.backgroundColor = '#6dc7ff';
       
   fragment.appendChild(nc)
   document.body.appendChild(fragment);
@@ -37,6 +37,7 @@ const addActionNotification = (message) => {
   const notificationContainer = document.getElementById('superbot-action-notification');
   notificationContainer.contentDocument.body.appendChild(msgText);
   notificationContainer.contentDocument.body.appendChild(fadeOutBar);
+  notificationContainer.contentDocument.body.style.overflow = 'hidden';
   notificationContainer.onclick = () => {
     notificationContainer.remove();
   }
