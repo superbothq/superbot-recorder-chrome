@@ -297,6 +297,7 @@ export default class SuperbotRecorder {
 
             console.log('currentMode:', this.currentMode)
 
+            console.time('element path coordinates')
             const res = await this.evaluateScript(`
               {
                 try {
@@ -306,55 +307,55 @@ export default class SuperbotRecorder {
                   }
                   console.log('elements:  ', [...elements])
 
-                  splicedParents = elements.filter(el => el.clientWidth > 0 &&
-                    el.clientHeight > 0 &&
-                    el.nodeName !== 'HTML' &&
-                    el.nodeName !== 'BODY')
-                  if(splicedParents.length < 1){
-                    throw new Error('No clickable elements found:', splicedParents);
+                  elementCoordinates = elements.reduce((acc, el) => {
+                    const coordinates = el.getBoundingClientRect();
+                    console.log('coordinates:', coordinates)
+                    if(coordinates.width < 1 || coordinates.height < 1){
+                      return acc;
                   }
+                    console.log('acc:', acc)
+                    console.log('el:', el)
 
-                  elem = splicedParents.shift();
-                  console.log('target element:', elem);
+                    if(acc.length > 0){
+                      const lastCoords = acc[acc.length - 1];
+                      console.log('lastCoords:', lastCoords)
 
-                  let parents = [];
-                  let parentImageCount = 0;
-                  for(let i = 0; i < splicedParents.length; i++){
-                      const coordinates = splicedParents[i].getBoundingClientRect();
-                      console.log('coords:', coordinates)
-                      if(parents.length > 1){
-                        const lastCoords = parents[parents.length-1];
-                        console.log('last parent:', parents[i-1])
                         if(coordinates.x !== lastCoords.x ||
                           coordinates.y !== lastCoords.y ||
                           coordinates.width !== lastCoords.width ||
                           coordinates.height !== lastCoords.height){
-                            parents.push(coordinates);
-                            parentImageCount++;
-                            if(parentImageCount > 5){
-                              break;
-                            }
+                          acc.push(coordinates);
+                          return acc;
+                      } else {
+                        return acc;
                           }
                       } else {
-                        parents.push(coordinates);
-                        parentImageCount++;
+                      acc.push(coordinates);
+                      return acc;
                       }
+                  }, []);
+
+                  if(elementCoordinates.length > 5){
+                    elementCoordinates.length = 6;
                   }
-                  if(parents.length < 1){
-                    throw new Error('No parents found for element!');
+                  console.log('elementCoordinates:', elementCoordinates);
+                  if(elementCoordinates.length < 1){
+                    throw new Error('No elementCoordinates found for element!');
                   }
-                  const elementPathCoordinates = [elem.getBoundingClientRect(), ...parents];
-                  console.log('elementPathCoordinates:', elementPathCoordinates)
+
+                  elem = nodeResolver(elements[0]);
+
                   JSON.stringify({
                     text: elem.innerText || elem.innerValue,
                     selector: cssPathBuilder(elem),
-                    imageCoords: elementPathCoordinates
+                    imageCoords: elementCoordinates
                   });
                 } catch(e){
                   console.log('Error in debugger evaluate script:', e);
                 }
               }
             `);
+            console.timeEnd('element path coordinates');
             if(res === undefined){
               //throw new Error(`${this.currentMode} evaluateScript: ${res}`);
               console.log(`${this.currentMode} evaluateScript: ${res}`);
