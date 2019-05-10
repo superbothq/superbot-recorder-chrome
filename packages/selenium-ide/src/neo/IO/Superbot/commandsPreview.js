@@ -60,23 +60,32 @@ const commandPreview = command => new Promise(async () => {
     console.log('command.image:', {img: command.image})
     tmp.src = command.image;
   })
-
-  const target = document.createElement('p');
-  target.innerText = command.target;
-
-  let value = null;
-  if(command.value !== ''){
-    value = document.createElement('p');
-    value.innerText = command.value;
-  }
   
+  const commandText = document.createElement('p');
+  commandText.style.margin = '0 0 5px 0';
+  commandText.style.fontSize = '16px';
+  commandText.style.color = '#333';
+  commandText.innerText = `Command: ${command.command}`;
+
+  const targetText = document.createElement('p');
+  targetText.style.margin = '0 0 5px 0';
+  targetText.style.fontSize = '16px';
+  targetText.style.color = '#333';
+  targetText.innerText = `Target: ${command.target}`;
 
   container.appendChild(text);
   container.appendChild(xbutton);
   container.appendChild(image);
-  container.appendChild(target);
-  if(value !== null){
-    container.appendChild(value);
+  container.appendChild(commandText);
+  container.appendChild(targetText);
+  if(command.value !== ''){
+    const valueText = document.createElement('p');
+    valueText.style.margin = '0 0 5px 0';
+    valueText.style.fontSize = '16px';
+    valueText.style.color = '#333';
+    valueText.innerText = `Value: ${command.value}`;
+
+    container.appendChild(valueText);
   }
   document.body.appendChild(previewIframe);
 

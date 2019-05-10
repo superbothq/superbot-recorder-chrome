@@ -1697,7 +1697,6 @@ BrowserBot.prototype.recursivelyDeleteCookie = function(
  */
 BrowserBot.prototype.findElementOrNull = function(locator, win) {
   locator = parse_locator(locator)
-
   if (win == null) {
     win = this.getCurrentWindow()
   }
@@ -1711,34 +1710,24 @@ BrowserBot.prototype.findElementOrNull = function(locator, win) {
   return element
 }
 
-BrowserBot.prototype.findElement = async function(images = null, locator, win) {
-  if(images === undefined || images === null){
-    console.log('OLD selector:', locator);
-    const el = this.oldFindElement(locator, win);
-    console.log('OLD el:', el);
-    return el;
-  }
-
-  const tries = [1, 2, 3, 4, 5]
-  let res = null;
-  for(const n of tries){
-    console.log(`${n}/${tries.length} tries`)
-    res = await this.matchImages(images);
-    if(res !== undefined && res !== null){
-      break;
+BrowserBot.prototype.findElement = async function(images, locator, win) {
+  if(images !== undefined && images !== null){
+    const tries = [1, 2, 3, 4, 5];
+    let res = null;
+    for(const n of tries){
+      console.log(`${n}/${tries.length} tries`);
+      res = await this.matchImages(images);
+      if(res !== undefined && res !== null){
+        console.log('NEW selector:', res);
+        const el = nodeResolver(document.elementFromPoint(res.x, res.y));
+        if(el !== null){
+          console.log('NEW el:', el);
+          return el;
+        }
+      }
     }
   }
 
-  if(res !== undefined && res !== null){
-    console.log('NEW selector:', res);
-    const el = nodeResolver(document.elementFromPoint(res.x, res.y));
-    console.log('NEW el:', el);
-    if(el !== null){
-      return el;
-    }
-  }
-
-  console.log('OLD selector:', locator);
   const elem = this.oldFindElement(locator, win);
   console.log('OLD el:', elem);
   if(elem === null){
@@ -1750,11 +1739,7 @@ BrowserBot.prototype.findElement = async function(images = null, locator, win) {
 
 BrowserBot.prototype.oldFindElement = function(locator, win) {
   const element = this.findElementOrNull(locator, win)
-  if(element === null){
-    return null;
-  } else {
-    return core.firefox.unwrap(element);
-  }
+  return core.firefox.unwrap(element);
 }
 
 BrowserBot.prototype.matchImages = function(elemImg) {

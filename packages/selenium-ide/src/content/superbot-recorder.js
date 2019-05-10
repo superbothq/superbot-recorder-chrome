@@ -40,6 +40,7 @@ const messageHandler = (message, sender, sendResponse) => {
     break;
 
     case 'updateMode': {
+      console.log('updateMode:', message.mode)
       currentMode = message.mode
       const modeIndicator = document.getElementById('superbot-mode-indicator');
       if(modeIndicator !== null){
@@ -149,7 +150,14 @@ const attachEventHandlers = () => {
   document.addEventListener('mousemove', event => {
     if(currentMode !== 'recording: click element') return;
 
-    chrome.runtime.sendMessage({ type: 'updateMousePos', coordinates: { x: event.clientX, y: event.clientY, time: new Date().getTime() }})
+    chrome.runtime.sendMessage({
+      type: 'updateMousePos',
+      coordinates: {
+        x: event.clientX,
+        y: event.clientY,
+        time: new Date().getTime()
+      }
+    })
   }, true)
 
   let isMouseDown = false;
@@ -206,6 +214,7 @@ const attachEventHandlers = () => {
   }, true)
 
   document.addEventListener('keydown', event => {
+    console.log('keydown:', event.key)
     if(event.keyCode !== 17) return;
 
       event.preventDefault();
