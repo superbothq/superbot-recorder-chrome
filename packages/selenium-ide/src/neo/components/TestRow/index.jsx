@@ -104,6 +104,9 @@ class TestRow extends React.Component {
     this.select = this.select.bind(this)
     this.remove = this.remove.bind(this)
     this.clearAll = this.clearAll.bind(this)
+    this.state = {
+      showImage: false
+    }
   }
   static propTypes = {
     index: PropTypes.number,
@@ -341,101 +344,143 @@ class TestRow extends React.Component {
           >
             Clear commands from here
           </ListMenuItem>
+          {this.props.command.image && (
+            <ListMenuItem
+              onClick={() => this.setState({ showImage: true })}
+            >
+              Show image template
+            </ListMenuItem>
+          )}
         </ListMenu>
       ) : null
     //setting component of context menu.
     this.props.setContextMenu(listMenu)
 
     const rendered = (
-      <tr
-        ref={node => {
-          if (node && this.props.new && !this.props.isDragging) {
-            this.props.new()
-            this.scrollToRowIfNeeded(node)
+      <div>
+        <tr
+          ref={node => {
+            if (node && this.props.new && !this.props.isDragging) {
+              this.props.new()
+              this.scrollToRowIfNeeded(node)
+            }
+            return (this.node = node || this.node)
+          }}
+          className={classNames(
+            this.props.className,
+            this.props.status,
+            { selected: this.props.selected },
+            { 'break-point': this.props.command.isBreakpoint }
+          )}
+          tabIndex={this.props.selected ? '0' : '-1'}
+          onContextMenu={
+            !this.props.isPristine && !this.props.readOnly
+              ? this.props.onContextMenu
+              : null
           }
-          return (this.node = node || this.node)
-        }}
-        className={classNames(
-          this.props.className,
-          this.props.status,
-          { selected: this.props.selected },
-          { 'break-point': this.props.command.isBreakpoint }
-        )}
-        tabIndex={this.props.selected ? '0' : '-1'}
-        onContextMenu={
-          !this.props.isPristine && !this.props.readOnly
-            ? this.props.onContextMenu
-            : null
-        }
-        onClick={this.select}
-        onDoubleClick={() => {
-          this.props.executeCommand && this.props.singleCommandExecutionEnabled
-            ? this.props.executeCommand(this.props.command)
-            : undefined
-        }}
-        onKeyDown={this.handleKeyDown.bind(this)}
-        onFocus={this.select}
-        style={{
-          opacity: this.props.isDragging ? '0' : '1',
-        }}
-      >
-        <td>
-          {!this.props.isPristine ? (
-            <a
-              className="break-toggle"
-              onClick={this.props.command.toggleBreakpoint}
-              onDoubleClick={e => {
-                e.stopPropagation()
+          onClick={this.select}
+          onDoubleClick={() => {
+            this.props.executeCommand && this.props.singleCommandExecutionEnabled
+              ? this.props.executeCommand(this.props.command)
+              : undefined
+          }}
+          onKeyDown={this.handleKeyDown.bind(this)}
+          onFocus={this.select}
+          style={{
+            opacity: this.props.isDragging ? '0' : '1',
+            backgroundColor: this.state.showImage ? 'rgb(216, 235, 251)' : null,
+            borderTop: this.state.showImage && !this.props.selected ? '1px solid #5cb3ff' : null
+          }}
+        >
+          <td>
+            {!this.props.isPristine ? (
+              <a
+                className="break-toggle"
+                onClick={this.props.command.toggleBreakpoint}
+                onDoubleClick={e => {
+                  e.stopPropagation()
+                }}
+              >
+                <span className="code index">{this.props.index + 1}</span>
+                <span className="arrow" />
+                {!this.props.command.enabled ? (
+                  <span className="comment-icon">{'//'}</span>
+                ) : null}
+              </a>
+            ) : null}
+          </td>
+          <td
+            className={classNames('comment', {
+              cell__hidden: !this.props.command.comment,
+            })}
+            colSpan="3"
+          >
+            <MultilineEllipsis lines={1}>
+              {this.props.command.comment}
+            </MultilineEllipsis>
+          </td>
+          <td
+            className={classNames('command', {
+              cell__alternate: this.props.command.comment,
+            })}
+          >
+            {commandIndentation}
+            <CommandName>{this.props.command.displayedName}</CommandName>
+          </td>
+          <td
+            className={classNames({
+              cell__alternate: this.props.command.comment,
+            })}
+          >
+            <MultilineEllipsis lines={3}>
+              {this.props.command.target}
+            </MultilineEllipsis>
+          </td>
+          <td
+            className={classNames({
+              cell__alternate: this.props.command.comment,
+            })}
+          >
+            <MultilineEllipsis lines={3}>
+              {this.props.command.value}
+            </MultilineEllipsis>
+          </td>
+          <td className="buttons">
+            {!this.props.isPristine && !this.props.readOnly ? listMenu : <div />}
+          </td>
+          
+        </tr>
+        {this.state.showImage && this.props.command.image && (
+          <tr
+            style={{
+              borderTop: '1px dashed rgb(92, 179, 255)',
+              borderBottom: '1px solid rgb(92, 179, 255)',
+              justifyContent: 'center',
+              backgroundColor: '#e3f2ff63'
+            }}
+          >
+            <div
+              onClick={() => this.setState({ showImage: false })}
+              style={{
+                position: 'absolute',
+                right: '10px',
+                cursor: 'pointer',
+                marginTop: '5px'
               }}
-            >
-              <span className="code index">{this.props.index + 1}</span>
-              <span className="arrow" />
-              {!this.props.command.enabled ? (
-                <span className="comment-icon">{'//'}</span>
-              ) : null}
-            </a>
-          ) : null}
-        </td>
-        <td
-          className={classNames('comment', {
-            cell__hidden: !this.props.command.comment,
-          })}
-          colSpan="3"
-        >
-          <MultilineEllipsis lines={1}>
-            {this.props.command.comment}
-          </MultilineEllipsis>
-        </td>
-        <td
-          className={classNames('command', {
-            cell__alternate: this.props.command.comment,
-          })}
-        >
-          {commandIndentation}
-          <CommandName>{this.props.command.displayedName}</CommandName>
-        </td>
-        <td
-          className={classNames({
-            cell__alternate: this.props.command.comment,
-          })}
-        >
-          <MultilineEllipsis lines={3}>
-            {this.props.command.target}
-          </MultilineEllipsis>
-        </td>
-        <td
-          className={classNames({
-            cell__alternate: this.props.command.comment,
-          })}
-        >
-          <MultilineEllipsis lines={3}>
-            {this.props.command.value}
-          </MultilineEllipsis>
-        </td>
-        <td className="buttons">
-          {!this.props.isPristine && !this.props.readOnly ? listMenu : <div />}
-        </td>
-      </tr>
+            >close</div>
+            <img
+              src={this.props.command.image[0]}
+              alt="command image"
+              style={{
+                maxWidth: '90%',
+                maxHeight: '400px',
+                backgroundColor: '#fff',
+                margin: '5px'
+              }}
+            ></img>
+          </tr>
+        )}
+      </div>
     )
     return !this.props.isPristine && !this.props.readOnly
       ? this.props.connectDropTarget(this.props.connectDragSource(rendered))

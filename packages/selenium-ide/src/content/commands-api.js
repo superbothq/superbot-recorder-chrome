@@ -67,6 +67,11 @@ function doCommands(request, _sender, sendResponse) {
             selenium.preprocessParameter(request.value)
           )
           if (returnValue instanceof Promise) {
+            //Popup command template preview
+            chrome.runtime.sendMessage({
+              type: 'templateMatchPreview',
+              ...request
+            })
             // The command is a asynchronous function
             returnValue
               .then(function() {

@@ -24,6 +24,7 @@ import { ControlFlowCommandChecks } from '../../models/Command'
 import Logger from '../../stores/view/Logs'
 import { isProduction } from '../../../common/utils'
 import compareImages from '../../IO/Superbot/templateMatching'
+import templateMatchPreview from '../Superbot/templateMatchPreview'
 
 let baseUrl = ''
 let ignoreBreakpoint = false
@@ -539,19 +540,21 @@ function isImplicitWait(command) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if(message.type !== 'getTab') return;
-
-  try {
-    chrome.tabs.captureVisibleTab(sender.tab.windowId, { format: 'png' }, async (pageScreenshot) => {
-      if(chrome.runtime.lastError !== undefined){
-        console.log('Error capturing screenshot:', chrome.runtime.lastError)
-      }
-      const res = await compareImages(pageScreenshot, message.elemImg);
-      console.log('playback compareImages:', res);
-      sendResponse(res);
-    })
-  } catch(e) {
-    console.log('Error capturing tab screenshot:', e);
+  if(message.type === 'getTab'){
+    try {
+      chrome.tabs.captureVisibleTab(sender.tab.windowId, { format: 'png' }, async (pageScreenshot) => {
+        if(chrome.runtime.lastError !== undefined){
+          console.log('Error capturing screenshot:', chrome.runtime.lastError)
+        }
+        const res = await compareImages(pageScreenshot, message.elemImg);
+        console.log('playback compareImages:', res);
+        sendResponse(res);
+      })
+    } catch(e) {
+      console.log('Error capturing tab screenshot:', e);
+    }
+    return true;
+  } else if (message.type === 'templateMatchPreview' && message.image){
+    templateMatchPreview(message.commands, message.image, message.target, message.value)
   }
-  return true;
 })
