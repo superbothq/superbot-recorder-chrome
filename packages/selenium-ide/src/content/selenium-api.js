@@ -498,29 +498,17 @@ Selenium.prototype.doDrag = async function(image, locator, value) {
     throw new Error(`Element with locator: ${locator} not found!`)
   }
   const path = JSON.parse(value)
-  this.browserbot.triggerMouseEvent(element, 'mousedown', true, element.clientX, element.clientY);
-  let lastTime = null;
+  let lastTime = path[0].time;
+  this.browserbot.triggerMouseEvent(element, 'mousedown', true, path[0].pos.x, path[0].pos.t);
   for(const it in path){
     await new Promise(resolve => {
       this.browserbot.triggerMouseEvent(element, 'mousemove', true, path[it].pos.x, path[it].pos.y);
-      if(lastTime !== null){
-        const waitTime = path[it].time - lastTime;
-        setTimeout(resolve, waitTime);
-        lastTime = path[it].time;
-      } else {
-        lastTime = path[it].time;
-        resolve();
-      }
+      const waitTime = path[it].time - lastTime;
+      lastTime = path[it].time;
+      setTimeout(resolve, waitTime);
     })
   }
-
-  this.browserbot.triggerMouseEvent(
-    element,
-    'mouseup',
-    true,
-    path[path.length - 1].pos.x,
-    path[path.length - 1].pos.y
-  )
+  this.browserbot.triggerMouseEvent(element, 'mouseup', true, path[path.length - 1].pos.x, path[path.length - 1].pos.y);
 }
 
 Selenium.prototype.doScroll = async function(image, locator, value) {
@@ -1088,7 +1076,7 @@ Selenium.prototype.prepareToInteract_ = async function(image = null, locator) {
   return element.getBoundingClientRect()
 }
 
-Selenium.prototype.doMouseOver = async function(image = null, locator) {
+Selenium.prototype.doMouseOver = async function(image, locator) {
   /**
    * Simulates a user hovering a mouse over the specified element.
    *

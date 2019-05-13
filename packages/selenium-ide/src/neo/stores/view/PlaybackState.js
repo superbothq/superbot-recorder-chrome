@@ -79,7 +79,7 @@ class PlaybackState {
   @observable
   paused = false
   @observable
-  delay = 0
+  delay = 220
   @observable
   callstack = []
   @observable
@@ -743,6 +743,7 @@ class PlaybackState {
 
   @action.bound
   setDelay(delay) {
+    console.log('playback delay:', delay)
     this.delay = delay
   }
 
