@@ -2,8 +2,8 @@
   "description": "Superbot Record and Playback tool for ease of getting acquainted with Superbot Scripts.",
   "manifest_version": 2,
   "name": "Superbot Recorder",
-  "version": "3.6.2",
-  "version_name": "3.6.2",
+  "version": "3.6.3",
+  "version_name": "3.6.3",
   "homepage_url": "https://github.com/superbothq/superbot-recorder-chrome",
   "icons": {
     "16": "icons/icon16.png",
@@ -60,7 +60,7 @@
         "assets/playback.js",
         "assets/record.js",
         "assets/superbot-recorder.js",
-        "assets/extension-load-test.js"
+        "assets/external-listeners.js"
       ],
       "match_about_blank": true,
       "all_frames": true

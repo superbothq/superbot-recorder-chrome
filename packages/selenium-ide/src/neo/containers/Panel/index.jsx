@@ -446,6 +446,27 @@ export default class Panel extends React.Component {
     }
   }
 
+  extensionPlaybackTest = async (message) => {
+    if(message.type !== 'extensionPlaybackTest') return;
+    const parsedTest = JSON.parse(message.test)
+    console.log('extensionPlaybackTest test:', parsedTest)
+    try {
+      if(!this.state.user){
+        await this.handleLogin();
+      }
+      const newProject = observable(new ProjectStore(''));
+      newProject.fromJS(parsedTest);
+      newProject.setModified(false);
+      Logger.clearLogs()
+      this.setState({ project: newProject, showUploadWarning: false }, () => {
+        loadJSProject(this.state.project, newProject.toJS());
+        UiState.selectTest(this.state.project._tests[0], this.state.project._suites[0]);
+      });
+    } catch(e){
+      console.log('extensionPlaybackTest error:', e)
+    }
+  }
+
   logoutUser = () => {
     if(!confirm('Are you sure you want to logout?')) return;
 
@@ -490,6 +511,7 @@ export default class Panel extends React.Component {
     const stagingEnabled = (localStorage.getItem('stagingEnabled') === 'true');
     backendUrl = stagingEnabled ? stagingUrl : prodUrl;
     chrome.runtime.onMessage.addListener(this.extensionLoadTest);
+    chrome.runtime.onMessage.addListener(this.extensionPlaybackTest);
     this.setState({ stagingEnabled }, () => {
       this.handleLogin();
     });

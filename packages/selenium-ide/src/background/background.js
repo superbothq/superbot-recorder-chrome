@@ -148,17 +148,15 @@ function pointIsValid(point) {
   return point >= 0 && point.constructor.name === 'Number'
 }
 
-chrome.runtime.onMessage.addListener(async message => {
-  if(message.type === 'extensionLoadTest'){
-    await openPanel({ windowId: 0 });
+chrome.runtime.onMessage.addListener(async (message) => {
+  if(message.type !== 'extensionLoadTest') return;
 
-    chrome.runtime.sendMessage({
-      type: 'extensionLoadTest',
-      testId: message.testId
-    })
-  } else if(message.type === 'reloadExtension'){
-    chrome.runtime.reload();
-  }
+  await openPanel({ windowId: 0 });
+
+  chrome.runtime.sendMessage({
+    type: 'extensionLoadTest',
+    testId: message.testId
+  })
 })
 
 browser.browserAction.onClicked.addListener(openPanel)

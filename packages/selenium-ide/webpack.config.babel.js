@@ -34,7 +34,7 @@ export default {
     background: ['./background/background'],
     record: ['./content/record'],
     'superbot-recorder': ['./content/superbot-recorder.js'],
-    'extension-load-test': ['./content/extension-load-test.js'],
+    'external-listeners': ['./content/external-listeners.js'],
     escape: ['./content/escape'],
     neo: ['react-hot-loader/patch', './neo/containers/Root'],
   },
