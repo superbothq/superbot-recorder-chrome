@@ -60,7 +60,7 @@ export default class ProjectHeader extends React.Component {
   playAll = () => {
     const isInSuiteView = UiState.selectedView === 'Test suites'
 
-    if (PlaybackState.canPlaySuite) {
+    if(PlaybackState.canPlaySuite) {
       this.props.disableUploadWarning();
       PlaybackState.playSuiteOrResume()
     } else if (isInSuiteView) {
@@ -102,13 +102,14 @@ export default class ProjectHeader extends React.Component {
           />
           <i className="si-pencil" />
         </div>
+        <a
+          className='testlist-link'
+          href={`https://superbot.cloud/organizations/${this.props.organizationId}/tests`}
+          target="_blank"
+        >
+          Test List
+        </a>
         <span className="buttons">
-          <a className='testlist-link'
-            href={`https://superbot.cloud/organizations/${this.props.organizationId}/tests`}
-            target="_blank"
-          >
-            Test List
-          </a>
           <BetterRecord
             disabled={PlaybackState.isPlaying}
             isRecording={UiState.isRecording}

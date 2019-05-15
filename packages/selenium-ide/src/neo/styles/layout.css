@@ -4,14 +4,6 @@
   height: stretch;
 }
 
-.container .wrapper,
-.container footer {
-  height: 100%;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
 .container .wrapper .SplitPane.vertical {
   height: initial !important;
   position: initial !important;

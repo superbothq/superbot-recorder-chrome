@@ -1,13 +1,7 @@
 .console {
   font-size: 12px;
-  /*height: 100vh;*/
 }
 
 .viewport {
-  padding: 0;
-  font-size: 12px;
-  overflow-y: hidden;
-  overflow-x: hidden;
-  /*TODO: figure out fix to this*/
-  height: 91vh;
+  height: 100%;
 }

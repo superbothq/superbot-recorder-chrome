@@ -28,6 +28,7 @@ import ListMenu, { ListMenuItem, ListMenuSeparator } from '../ListMenu'
 import MultilineEllipsis from '../MultilineEllipsis'
 import { withOnContextMenu } from '../ContextMenu'
 import ModalState from '../../stores/view/ModalState'
+import UiState from '../../stores/view/UiState'
 import './style.css'
 
 export const Type = 'command'
@@ -312,11 +313,7 @@ class TestRow extends React.Component {
           </ListMenuItem>
           <ListMenuItem
             label="U"
-            onClick={() => {
-              this.props.startPlayingHere(this.props.command, {
-                recordFromHere: true,
-              })
-            }}
+            onClick={() => UiState.toggleSuperbotRecording()}
           >
             Record from here
           </ListMenuItem>
@@ -451,32 +448,15 @@ class TestRow extends React.Component {
           
         </tr>
         {this.state.showImage && this.props.command.image && (
-          <tr
-            style={{
-              borderTop: '1px dashed rgb(92, 179, 255)',
-              borderBottom: '1px solid rgb(92, 179, 255)',
-              justifyContent: 'center',
-              backgroundColor: '#e3f2ff63'
-            }}
-          >
+          <tr className='template-preview-row'>
             <div
               onClick={() => this.setState({ showImage: false })}
-              style={{
-                position: 'absolute',
-                right: '10px',
-                cursor: 'pointer',
-                marginTop: '5px'
-              }}
-            >close</div>
+            >
+              close
+            </div>
             <img
               src={this.props.command.image[0]}
               alt="command image"
-              style={{
-                maxWidth: '90%',
-                maxHeight: '400px',
-                backgroundColor: '#fff',
-                margin: '5px'
-              }}
             ></img>
           </tr>
         )}

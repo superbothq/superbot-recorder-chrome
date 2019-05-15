@@ -177,3 +177,21 @@
 .test-table tr .buttons > .active {
   opacity: 1;
 }
+
+.template-preview-row {
+  border-top: 1px dashed #5cb3ff;
+  border-bottom: 1px solid #5cb3ff;
+  background-color: #e3f2ff63;
+}
+
+.template-preview-row div {
+  margin: 9px;
+}
+
+.template-preview-row img {
+  max-width: 90%;
+  max-height: 400px;
+  background-color: #fff;
+  margin: auto;
+  padding-bottom: 1px;
+}

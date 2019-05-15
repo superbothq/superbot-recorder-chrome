@@ -79,7 +79,7 @@ export default class Console extends React.Component {
       <div className="console">
         <TabBar
           tabs={tabs}
-          tabWidth={115}
+          tabWidth={120}
           buttonsMargin={0}
           tabChanged={this.tabChangedHandler}
           selectedTab={this.state.tab}
