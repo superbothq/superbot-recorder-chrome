@@ -492,7 +492,8 @@ Selenium.prototype.doAssertText = async function(image = null, locator, value) {
   }
 }
 
-Selenium.prototype.doDrag = async function(image, locator, value) {
+Selenium.prototype.doDrag = async function(images, locator, value) {
+  await new Promise(resolve => setTimeout(resolve, 750));
   let element = await this.browserbot.findElement(null, locator)
   if(element === null){
     throw new Error(`Element with locator: ${locator} not found!`)

@@ -313,7 +313,7 @@ class TestRow extends React.Component {
           </ListMenuItem>
           <ListMenuItem
             label="U"
-            onClick={() => UiState.toggleSuperbotRecording()}
+            onClick={() => this.props.startPlayingHere(this.props.command, { recordFromHere: true })}
           >
             Record from here
           </ListMenuItem>

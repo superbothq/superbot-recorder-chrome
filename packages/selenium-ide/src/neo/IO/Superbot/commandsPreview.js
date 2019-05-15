@@ -15,7 +15,7 @@ const commandPreview = command => new Promise(async () => {
   previewIframe.id = 'command-preview';
   previewIframe.style.zIndex = 2147483647;
   previewIframe.style.position = 'fixed';
-  previewIframe.style.top = '20px';
+  previewIframe.style.top = '50px';
   previewIframe.style.left = '20px';
   previewIframe.style.width = '93.5%';
   previewIframe.style.height = '43%';
@@ -83,7 +83,7 @@ const commandPreview = command => new Promise(async () => {
     valueText.style.margin = '0 0 5px 0';
     valueText.style.fontSize = '16px';
     valueText.style.color = '#333';
-    valueText.innerText = `Value: ${command.value}`;
+    valueText.innerText = `Value: ${command.value.length > 75 ? command.value.slice(0, 75) + '...' : command.value}`;
 
     container.appendChild(valueText);
   }

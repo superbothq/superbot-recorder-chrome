@@ -1711,16 +1711,16 @@ BrowserBot.prototype.findElementOrNull = function(locator, win) {
 }
 
 BrowserBot.prototype.findElement = async function(images, locator, win) {
-  if(images !== undefined && images !== null){
+  if(images && images.length > 0){
     const tries = [1, 2, 3, 4, 5];
     let res = null;
     for(const n of tries){
       console.log(`${n}/${tries.length} tries`);
       res = await this.matchImages(images);
-      if(res !== undefined && res !== null){
+      if(res){
         console.log('NEW selector:', res);
         const el = nodeResolver(document.elementFromPoint(res.x, res.y));
-        if(el !== null){
+        if(el){
           console.log('NEW el:', el);
           return el;
         }
@@ -1730,10 +1730,10 @@ BrowserBot.prototype.findElement = async function(images, locator, win) {
 
   const elem = this.oldFindElement(locator, win);
   console.log('OLD el:', elem);
-  if(elem === null){
-    throw new Error(`Element ${locator} not found`);
-  } else {
+  if(elem){
     return elem;
+  } else {
+    throw new Error(`Element ${locator} not found`);    
   }
 }
 

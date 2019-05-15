@@ -79,7 +79,7 @@ class PlaybackState {
   @observable
   paused = false
   @observable
-  delay = 220
+  delay = 0
   @observable
   callstack = []
   @observable

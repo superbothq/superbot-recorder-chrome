@@ -1,5 +1,5 @@
 const addModeIndicator = (targetMode = null) => {
-  if(window.self !== window.top || document.getElementById('superbot-mode-indicator') !== null) return;
+  if(window.self !== window.top || document.getElementById('superbot-mode-indicator') !== null) return;
 
 
   const fragment = document.createDocumentFragment();
@@ -46,6 +46,13 @@ const addModeIndicator = (targetMode = null) => {
     },
     false
   )
+}
+
+export const removeModeIndicator = () => {
+  const elem = document.getElementById('superbot-mode-indicator');
+  if(elem){
+    elem.remove();
+  }
 }
 
 export default addModeIndicator;

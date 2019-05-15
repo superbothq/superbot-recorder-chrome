@@ -55,14 +55,3 @@ export const waitForCanvas = (canvas, context) => new Promise(resolve => {
     }
   }, 10);
 })
-
-export const focusWindow = () => {
-  chrome.windows.getCurrent(window => {
-    chrome.tabs.getSelected(window.id, response => {
-      chrome.windows.update(response.windowId, { focused: true }, () => {
-        //check the error message :^)
-        chrome.runtime.lastError;
-      });
-    });
-  });
-}

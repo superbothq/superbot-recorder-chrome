@@ -110,7 +110,7 @@ const compareImages = async (sourceData, templatesData) => {
     //check parents to dom return p
     //check if target el is found in p
     const parent = await parentsToDom(source, templates);
-    if(parent.maxVal < 0.9){
+    if(!parent || parent.maxVal < 0.9){
       return null;
     } 
     console.log('parent:', parent)
@@ -118,7 +118,7 @@ const compareImages = async (sourceData, templatesData) => {
 
     const targetToParent = await templateMatch(parent.mat, targetEl)
     console.log('targetToParent:', targetToParent)
-    if(targetToParent.maxVal < 0.9){
+    if(!targetToParent || targetToParent.maxVal < 0.9){
       return null;
     }
 

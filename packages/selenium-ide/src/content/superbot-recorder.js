@@ -1,27 +1,24 @@
-import addModeIndicator from './modeIndicator'
+import addModeIndicator, { removeModeIndicator } from './modeIndicator'
 import LocatorBuilders from './locatorBuilders'
 import addActionNotification from './actionNotification';
 const locatorBuilders = new LocatorBuilders(window)
 
-chrome.runtime.sendMessage({ type: 'evaluateScripts' })
-
 let attached = false
 let currentMode = null;
 const modes = ['recording: select target', 'recording: click element', 'drag', 'hover', 'assert text', 'wait for element']
+const eventHandlers = [];
 
 const messageHandler = (message, sender, sendResponse) => {
   switch(message.type){
     case 'attachSuperbotRecorder':
       if(!attached){
-        chrome.runtime.sendMessage({ type: 'getMode' }, savedMode => {
-          currentMode = savedMode;
-          if(currentMode === 'recording: click element' || currentMode === 'drag'){
-            chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: false })
-          } else {
-            chrome.runtime.sendMessage({ type: 'debuggerCommand', enabled: true })
-          }
-          addModeIndicator(currentMode);
-        });
+        currentMode = message.mode;
+        chrome.runtime.sendMessage({
+          type: 'debuggerCommand',
+          enabled: currentMode === 'drag' ||
+          currentMode === 'recording: click element' ? false : true
+        })
+        addModeIndicator(currentMode);
         attachEventHandlers();
         attached = true;
       }
@@ -64,6 +61,17 @@ const messageHandler = (message, sender, sendResponse) => {
         console.log('Message - notificationVisible error:', e);
       }
     break;
+
+    case 'pollAlive':
+      sendResponse(true)
+    break;
+
+    case 'stopRecording':
+      detachEventListeners();
+      removeModeIndicator();
+      attached = false;
+      currentMode = null;
+    break
   }
 }
 
@@ -104,125 +112,139 @@ const advanceCurrentMode = (targetMode = null) => {
 }
 
 const attachEventHandlers = () => {
-  document.addEventListener('keyup', event => {
-    if(event.target.value === '' ||
-      event.target.value === undefined ||
-      event.target.value === null ||
-      event.keyCode === 17){
-      if(event.keyCode !== 13 && event.keyCode !== 8){
+  if(eventHandlers.length == 0){
+    eventHandlers.push({ event: 'keyup', handler: (event) => {
+      console.log('event.target.value:', event.target.value)
+      console.log('event.keyCode:', event.keyCode)
+      if(!event.target.value || event.target.value === '' || event.keyCode === 17){
+        if(event.keyCode !== 13 && event.keyCode !== 8){
+          return
+        }
+      }
+    
+      if(event.keyCode === 13){
+        recordCommand('sendKeys', locatorBuilders.buildAll(event.target), '${KEY_ENTER}')
+      } else {
+        recordCommand('type', locatorBuilders.buildAll(event.target), event.target.value);
+      }
+    }})
+
+    eventHandlers.push({ event: 'click', handler: (event) => {
+      if(currentMode !== 'recording: click element'){
         return;
-      }
-    }
-
-    if(event.keyCode === 13){
-      recordCommand('sendKeys', locatorBuilders.buildAll(event.target), '${KEY_ENTER}')
-    } else {
-      recordCommand('type', locatorBuilders.buildAll(event.target), event.target.value);
-    }
-  }, true)
-
-  document.addEventListener('click', (event) => {
-    if(currentMode !== 'recording: click element'){
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      return;
-    } else {
-      for(let i = 0; i < event.path.length; i++){
-        if(event.path[i].id === 'screenshot-preview-container'){
+      } else {
+        for(let i = 0; i < event.path.length; i++){
+          if(event.path[i].id === 'screenshot-preview-container'){
+              return;
+          }
+          if(event.path[i].id === 'superbot-action-notification'){
             return;
-        }
-        if(event.path[i].id === 'superbot-action-notification'){
-          return;
+          }
         }
       }
-    }
+    
+      const coordinates = event.target.getBoundingClientRect();
+      recordCommand('click', locatorBuilders.buildAll(event.target), '', coordinates);
+    }})
 
-    const coordinates = event.target.getBoundingClientRect();
-    recordCommand('click', locatorBuilders.buildAll(event.target), '', coordinates);
-  }, true)
+    eventHandlers.push({ event: 'scroll', handler: (event) => {
+      //console.log('document scroll event!')
+      recordCommand('scroll', [['window']], window.pageYOffset.toString())
+    }})
 
-  document.addEventListener('scroll', event => {
-    //console.log('document scroll event!')
-    recordCommand('scroll', [['window']], window.pageYOffset.toString())
-  }, true);
+    eventHandlers.push({ event: 'mousemove', handler: (event) => {
+      if(currentMode !== 'recording: click element') return;
 
-  document.addEventListener('mousemove', event => {
-    if(currentMode !== 'recording: click element') return;
+      chrome.runtime.sendMessage({
+        type: 'updateMousePos',
+        coordinates: {
+          x: event.clientX,
+          y: event.clientY,
+          time: new Date().getTime()
+        }
+      })
+    }})
 
-    chrome.runtime.sendMessage({
-      type: 'updateMousePos',
-      coordinates: {
-        x: event.clientX,
-        y: event.clientY,
-        time: new Date().getTime()
+    let isMouseDown = false;
+    let mouseDownEvent = null;
+    let dragCoordinates = [];
+    eventHandlers.push({ event: 'mousedown', handler: (event) => {
+      console.log('mousedown!')
+      isMouseDown = true;
+      mouseDownEvent = event
+    }})
+
+    eventHandlers.push({ event: 'mousemove', handler: (event) => {
+      console.log('currentMode:', currentMode)
+      console.log('isMouseDown:', isMouseDown)
+      if(currentMode !== 'drag' || !isMouseDown) return;
+      console.log('mousemove!')
+      //record time step and coordinate
+      dragCoordinates.push({ 
+        pos: { x: event.x, y: event.y },
+        time: event.timeStamp
+      });
+    }})
+
+    eventHandlers.push({ event: 'mouseup', handler: (event) => {
+      console.log('mouseup!')
+      if(isMouseDown && mouseDownEvent && dragCoordinates.length > 0){
+        recordCommand('drag', locatorBuilders.buildAll(mouseDownEvent.target), dragCoordinates);
       }
-    })
-  }, true)
+      isMouseDown = false;
+      mouseDownEvent = null;
+      dragCoordinates = [];
+    }})
 
-  let isMouseDown = false;
-  let mouseDownEvent = null;
-  let dragCoordinates = [];
-  document.addEventListener('mousedown', event => {
-    console.log('mousedown!')
-    isMouseDown = true;
-    mouseDownEvent = event
-  }, true)
+    eventHandlers.push({ event: 'dragend', handler: (event) => {
+      console.log('dragend!');
+      if(isMouseDown && mouseDownEvent && dragCoordinates.length > 0){
+        recordCommand('drag', locatorBuilders.buildAll(mouseDownEvent.target), dragCoordinates);
+      }
+      isMouseDown = false;
+      mouseDownEvent = null;
+      dragCoordinates = [];
+    }})
 
-  document.addEventListener('mousemove', event => {
-    console.log('currentMode:', currentMode)
-    console.log('isMouseDown:', isMouseDown)
-    if(currentMode !== 'drag' || isMouseDown === false) return;
-    console.log('mousemove!')
-    //record time step and coordinate
-    dragCoordinates.push({ 
-      pos: { x: event.x, y: event.y },
-      time: event.timeStamp
-    });
-  }, true)
+    let dragStartTarget = null;
+    eventHandlers.push({ event: 'dragstart', handler: (event) => {
+      dragStartTarget = event.target;
+    }})
 
-  document.addEventListener('mouseup', event => {
-    console.log('mouseup!')
-    if(isMouseDown !== false && mouseDownEvent !== null && dragCoordinates.length > 0){
-      recordCommand('drag', locatorBuilders.buildAll(mouseDownEvent.target), dragCoordinates);
-    }
-    isMouseDown = false;
-    mouseDownEvent = null;
-    dragCoordinates = [];
-  }, true)
+    eventHandlers.push({ event: 'drop', handler: (event) => {
+      if (dragStartTarget && dragStartTarget !== event.target && event.button == 0){
+        recordCommand('dragAndDropToObject', locatorBuilders.buildAll(dragStartTarget), locatorBuilders.build(event.target));
+      }
+      dragStartTarget = null;
+    }})
 
-  document.addEventListener('dragend', event => {
-    console.log('dragend!');
-    if(isMouseDown !== false && mouseDownEvent !== null && dragCoordinates.length > 0){
-      recordCommand('drag', locatorBuilders.buildAll(mouseDownEvent.target), dragCoordinates);
-    }
-    isMouseDown = false;
-    mouseDownEvent = null;
-    dragCoordinates = [];
-  }, true)
+    eventHandlers.push({ event: 'keydown', handler: (event) => {
+      console.log('keydown:', event.key)
+      if(event.keyCode !== 17) return;
+    
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+    
+        advanceCurrentMode();
+    }})
+  }
 
-  let dragStartTarget = null;
-  document.addEventListener('dragstart', event => {
-    dragStartTarget = event.target;
-  }, true)
-
-  document.addEventListener('drop', event => {
-    if (dragStartTarget && dragStartTarget !== event.target && event.button == 0){
-      recordCommand('dragAndDropToObject', locatorBuilders.buildAll(dragStartTarget), locatorBuilders.build(event.target));
-    }
-    dragStartTarget = null;
-  }, true)
-
-  document.addEventListener('keydown', event => {
-    console.log('keydown:', event.key)
-    if(event.keyCode !== 17) return;
-
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-
-      advanceCurrentMode();
-  }, true)
+  for(let i = 0; i < eventHandlers.length; i++){
+    document.addEventListener(eventHandlers[i].event, eventHandlers[i].handler, true);
+  }
 }
 
-chrome.runtime.onMessage.addListener(messageHandler)
+const detachEventListeners = () => {
+  for(let i = 0; i < eventHandlers.length; i++){
+    document.removeEventListener(eventHandlers[i].event, eventHandlers[i].handler, true);
+  }
+}
+
+chrome.runtime.onMessage.addListener(messageHandler);
+chrome.runtime.sendMessage({ type: 'getMode' }, (mode) => {
+  if(mode){
+    currentMode = mode;
+    chrome.runtime.sendMessage({ type: 'evaluateScripts' })
+  }
+})

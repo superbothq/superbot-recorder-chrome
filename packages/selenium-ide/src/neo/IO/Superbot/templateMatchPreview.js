@@ -15,7 +15,7 @@ const templateMatchPreview = (command, images, target, value) => new Promise(asy
   previewIframe.id = 'template-match-preview';
   previewIframe.style.zIndex = 2147483647;
   previewIframe.style.position = 'fixed';
-  previewIframe.style.top = '20px';
+  previewIframe.style.top = '50px';
   previewIframe.style.left = '20px';
   previewIframe.style.width = '93.5%';
   previewIframe.style.height = '43%';
