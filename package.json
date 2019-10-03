@@ -1,55 +1,74 @@
 {
-  "name": "selenium-ide",
+  "name": "selenium-ide-monorepo",
   "repository": "git@github.com:SeleniumHQ/selenium-ide.git",
   "license": "Apache-2.0",
   "private": true,
   "scripts": {
     "start": "cd packages/selenium-ide && yarn start",
-    "build": "lerna run build --ignore selenium-ide-extension-boilerplate",
-    "build:ext": "cd packages/selenium-ide && yarn build-dev",
-    "build:runner": "cd packages/selenium-side-runner && yarn build",
-    "build:selianize": "cd packages/selianize && yarn build",
-    "build:webdriver": "cd packages/browser-webdriver && yarn build",
-    "build:webdriver:dev": "cd packages/browser-webdriver && yarn build:dev",
-    "build:ext:prod": "cd packages/selenium-ide && yarn build",
-    "pack:chrome": "cd packages/selenium-ide && yarn build-chrome",
-    "pack:firefox": "cd packages/selenium-ide && yarn build-firefox",
-    "pack:runner": "cd packages/selenium-side-runner && yarn pkg",
+    "build": "lerna run build",
     "test": "jest",
-    "test:ext": "jest --testMatch \"**/packages/selenium-ide/tests/**/*.spec.js\"",
-    "test:runner": "cd tests/examples && node ../../packages/selenium-side-runner/dist/index.js *.side",
-    "test:webdriver": "jest --testMatch \"**/packages/browser-webdriver/tests/**/*.spec.js\"",
-    "lint": "yarn lint:scripts && yarn lint:styles",
-    "lint:scripts": "eslint \"packages/*/src/**/*.js\" \"packages/*/src/**/*.jsx\" \"packages/*/__tests__/**/*.js\" \"packages/*/tests/**/*.js\" \"packages/*/__mocks__/**/*.js\" \"website/**/*.js\" --ignore-pattern=\"extension-boilerplate\" --ignore-pattern=\"node_modules\"",
-    "lint:styles": "stylelint \"packages/selenium-ide/src/neo/**/*.css\"",
-    "postinstall": "lerna bootstrap"
+    "test:e2e": "jest --testMatch \"**/packages/**/__tests__/**/*.e2e.js\"",
+    "lint": "yarn lint:scripts",
+    "lint:scripts": "eslint --ignore-pattern node_modules --ignore-pattern dist --ignore-pattern build --ignore-pattern json --ext js --ext ts \"**/*.js\" \"**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "watch": "lerna run --no-bail --parallel watch",
+    "preinstall": "node ./scripts/check-yarn.js"
   },
+  "files": [],
   "jest": {
     "testURL": "http://localhost/index.html",
     "moduleNameMapper": {
       "^.+\\.(css|scss)$": "identity-obj-proxy"
     },
-    "setupTestFrameworkScriptFile": "./packages/selenium-ide/scripts/jest/test.config.js",
+    "setupFilesAfterEnv": [
+      "./scripts/jest/test.config.js"
+    ],
     "testMatch": [
-      "**/packages/**/__test?(s)__/**/*.js?(x)"
-    ]
+      "**/packages/**/__test?(s)__/**/*.spec.[jt]s?(x)"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/"
+    ],
+    "transform": {
+      "^.+\\.jsx?$": "babel-jest",
+      "^.+\\.tsx?$": "ts-jest"
+    }
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "devDependencies": {
-    "babel-eslint": "^10.0.1",
-    "babel-jest": "^23.6.0",
-    "eslint": "^5.8.0",
-    "eslint-config-prettier": "^3.1.0",
-    "eslint-plugin-jest": "^21.27.1",
-    "eslint-plugin-prettier": "^3.0.0",
-    "eslint-plugin-react": "^7.11.1",
+    "@babel/cli": "^7.6.2",
+    "@babel/core": "^7.6.2",
+    "@babel/plugin-proposal-class-properties": "^7.5.5",
+    "@babel/plugin-proposal-export-namespace-from": "^7.5.2",
+    "@babel/preset-env": "^7.6.2",
+    "@babel/preset-typescript": "^7.6.0",
+    "@testing-library/jest-dom": "^4.1.0",
+    "@types/jest": "^24.0.18",
+    "@types/node": "^12.7.8",
+    "@types/selenium-webdriver": "^4.0.3",
+    "@typescript-eslint/eslint-plugin": "^2.3.1",
+    "@typescript-eslint/parser": "^2.3.1",
+    "babel-eslint": "^10.0.3",
+    "babel-jest": "^24.9.0",
+    "concurrently": "^4.1.2",
+    "eslint": "^6.5.0",
+    "eslint-config-prettier": "^6.3.0",
+    "eslint-plugin-jest": "^22.17.0",
+    "eslint-plugin-no-only-tests": "^2.3.1",
+    "eslint-plugin-node": "^10.0.0",
+    "eslint-plugin-prettier": "^3.1.1",
+    "eslint-plugin-react": "^7.14.3",
     "identity-obj-proxy": "^3.0.0",
-    "jest": "^23.6.0",
-    "lerna": "^3.4.3",
-    "prettier": "^1.14.3",
-    "stylelint": "^9.7.1",
-    "stylelint-config-prettier": "^4.0.0",
-    "stylelint-config-standard": "^18.2.0",
-    "stylelint-prettier": "^1.0.3",
-    "web-ext": "^2.4.0"
+    "jest": "^24.9.0",
+    "lerna": "^3.16.4",
+    "prettier": "^1.17.0",
+    "stylelint": "^11.0.0",
+    "stylelint-config-prettier": "^6.0.0",
+    "stylelint-config-standard": "^19.0.0",
+    "stylelint-prettier": "^1.0.6",
+    "ts-jest": "^24.1.0",
+    "typescript": "^3.6.3"
   }
 }

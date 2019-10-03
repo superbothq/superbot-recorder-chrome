@@ -2,30 +2,24 @@ sudo: required
 language: node_js
 cache:
   yarn: true
-  pip: true
-  directories:
-    - .peru
 node_js:
-  - "10"
-  - "8"
+  - "12"
 services:
   - docker
+addons:
+  firefox: latest
 before_install:
   - curl -o- -L https://yarnpkg.com/install.sh | bash
   - export PATH="$HOME/.yarn/bin:$PATH"
-  - pyenv install -s 3.6
-  - pyenv shell 3.6
-  - pip3 install peru
-  - peru sync
+  - sudo apt-get update
+  - sudo apt-get install -y dpkg
+  - sudo apt-get install -y google-chrome-stable
 install:
   - yarn --ignore-engines
-  - yarn build:webdriver
-  - yarn build:selianize
-  - yarn build:runner
-  - NODE_ENV="staging" yarn build:ext
-  - docker-compose up -d
+  - yarn build
 script:
+  - yarn typecheck
   - yarn lint
   - yarn test
-  - yarn test:webdriver
-  - yarn test:runner --server http://localhost:4444/wd/hub --force
+env:
+  - CHROMEDRIVER_VERSION=LATEST
