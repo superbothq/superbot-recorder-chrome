@@ -1,0 +1,37 @@
+{
+	"name": "Recorder",
+	"version": "1.0",
+	"manifest_version": 2,
+	"description": "",
+	"background": {
+		"scripts": [
+			"background.js"
+		]
+	},
+	"browser_action": {
+		"default_icon": "./icons/icon.png"
+	},
+	"content_scripts": [
+		{
+			"matches": [
+				"*://*/*"
+			],
+			"js": [
+				"loadTime.js"
+			]
+		},
+		{
+			"matches": [
+				"*://*/*"
+			],
+			"js": [
+				"explore.js"
+			]
+		}
+	],
+	"permissions": [
+		"activeTab",
+		"contextMenus",
+		"storage"
+	]
+}
