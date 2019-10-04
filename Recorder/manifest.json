@@ -17,15 +17,9 @@
 				"*://*/*"
 			],
 			"js": [
-				"loadTime.js"
-			]
-		},
-		{
-			"matches": [
-				"*://*/*"
-			],
-			"js": [
-				"explore.js"
+				"loadTime.js",
+				"explore.js",
+				"utils.js"
 			]
 		}
 	],
