@@ -1,5 +1,13 @@
 (() => {
-  //copied from utils.js
+  chrome.runtime.onInstalled.addListener(() => {
+    chrome.storage.local.get("cache", (data) => {
+      if (!data.cache) {
+        data.cache = {};
+      }
+      chrome.storage.local.set(data);
+    })
+  });
+
   const rand = (max) => {
     if (!max) {
       max = Math.max();
@@ -18,48 +26,37 @@
   chrome.contextMenus.create({
     id: "explore",
     title: "Start exploring",
-    contexts: ["all"]
+    contexts: ["browser_action"]
   });
 
   const getTab = (tabId) => {
     return new Promise(resolve => {
       chrome.storage.local.get("cache", (data) => {
-        if (!data.cache) {
-          data.cache = {};
+        const id = `tab-${tabId}`;
+        if (!data.cache[id]) {
+          data.cache[id] = {};
+          data.cache[id].exploringStatus = false;
+          data.cache[id].discoveredUrls = [];
+          data.cache[id].visitedUrls = [];
         }
 
-        if (!data.cache[tabId]) {
-          data.cache[tabId] = {};
-          data.cache[tabId].exploringStatus = false;
-          data.cache[tabId].discoveredUrls = [];
-          data.cache[tabId].visitedUrls = [];
-        }
-
-
-
-        console.log("get tab tab:", data.cache[tabId]);
-
-        resolve(data.cache[tabId]);
+        resolve(data.cache[id]);
       })
     })
   }
 
   const updateTab = (id, tab) => {
     chrome.storage.local.get("cache", (data) => {
-      if (!data.cache) {
-        data.cache = {};
-      }
-      console.log("updateTab data:", data);
-      data.cache[id] = tab;
+      const tabId = `tab-${id}`;
+      data.cache[tabId] = tab;
       chrome.storage.local.set(data);
     })
   }
 
   const deleteTab = (id) => {
     chrome.storage.local.get("cache", (data) => {
-      if (data.cache[id]) {
-        delete data.cache[id];
-      }
+      delete data.cache[`tab-${id}`];
+      chrome.storage.local.set(data);
     });
   }
 
@@ -73,21 +70,26 @@
     }
 
     getTab(sender.tab.id).then((tab) => {
-      console.log("type:", req.type);
-      console.log("tab:", tab);
-
       switch (req.type) {
         case "updateContextMenu": {
           updateContextMenu(tab.exploringStatus);
         } break;
 
         case "getExploringStatus": {
-          console.log("GET EXPLORING STATUS:");
           sendResponse(tab.exploringStatus);
         } break;
 
-        case "addDiscoveredUrls": {
-          tab.discoveredUrls = [...tab.discoveredUrls, ...req.urls];
+        case "addUrls": {
+          let newUrls = [];
+          if (req.discoveredUrls && req.discoveredUrls.length > 0) {
+            newUrls = [...tab.discoveredUrls, ...req.discoveredUrls];
+            tab.discoveredUrls = [...new Set(newUrls)];
+          }
+
+          if (req.visitedUrl) {
+            tab.visitedUrls = [...new Set([...tab.visitedUrls, req.visitedUrl])];
+          }
+
           updateTab(sender.tab.id, tab);
         } break;
 
@@ -97,33 +99,26 @@
           }
 
           if (tab.discoveredUrls.length < 1 && tab.visitedUrls.length > 0) {
-            const url = tab.visitedUrls[rand(tab.visitedUrls.length)];
+            const url = tab.visitedUrls[rand(tab.visitedUrls.length - 1)];
             return sendResponse(url);
           }
 
-          const index = rand(tab.discoveredUrls.length);
+          const index = rand(tab.discoveredUrls.length - 1);
           const url = tab.discoveredUrls.splice(index, 1);
-          tab.visitedUrls.push(url);
+          tab.visitedUrls = [...new Set([...tab.visitedUrls, url])];
           updateTab(sender.tab.id, tab);
           sendResponse(url);
         } break;
 
-        case "exploreQuit": {
-          tab.exploringStatus = false;
-          updateTab(sender.tab.id, tab);
-        } break;
-
-        case "deleteCache": {
-          deleteTab(sender.tab.id);
-        } break;
-
-        default: console.log("request type not recognized:", req.type);
+        default: break;
       }
 
       if (chrome.runtime.lastError) {
-        console.log("background runtime error:", chrome.runtime.lastError.message);
+        console.error("Background runtime error:", chrome.runtime.lastError.message);
       }
     })
+
+    return true;
   });
 
 
@@ -132,11 +127,13 @@
       return;
 
     getTab(currentTab.id).then((tab) => {
-      console.log("ONCLICK TAB STATUS:", !tab.exploringStatus);
       tab.exploringStatus = !tab.exploringStatus;
       updateTab(currentTab.id, tab);
       updateContextMenu(tab.exploringStatus);
       chrome.tabs.sendMessage(currentTab.id, { exploring: tab.exploringStatus });
+      if (tab.exploringStatus === false) {
+        deleteTab(currentTab.id);
+      }
     })
   })
 })();

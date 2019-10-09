@@ -1,15 +1,25 @@
 (() => {
+  window.onfocus = () => {
+    chrome.runtime.sendMessage({ type: "updateContextMenu" });
+  }
+
   window.onload = () => {
-    chrome.runtime.sendMessage({ type: "getExploringStatus" }, (status) => {
-      if (true) {
+    chrome.runtime.sendMessage({ type: "getExploringStatus" }, (exploringStatus) => {
+      if (exploringStatus) {
         explore();
       }
     })
   }
 
-  window.onfocus = () => {
-    chrome.runtime.sendMessage({ type: "updateContextMenu" });
-  }
+  chrome.runtime.onMessage.addListener((msg, sender, res) => {
+    if (msg.exploring) {
+      explore();
+    }
+
+    if (chrome.runtime.lastError) {
+      console.error("Tab runtime error:", chrome.runtime.lastError.message);
+    }
+  })
 
   const sanitizeUrl = (url) => {
     if (!url) return null;
@@ -42,6 +52,7 @@
     return url;
   }
 
+  const sleep = (delay) => new Promise(resolve => setTimeout(resolve, delay));
 
   const smootherScroll = (to, duration) => {
     return new Promise(resolve => {
@@ -58,35 +69,21 @@
       let currentTime = 0;
       let increment = 20;
 
-      console.log("-------------------");
-
-      console.log("start:", start);
-      console.log("to:", to);
-      console.log("change:", change);
-      console.log("currentTime:", currentTime);
-      console.log("increment:", increment);
-      console.log("duration:", duration);
-
       const animateScroll = () => {
         currentTime += increment;
         const step = easeInOutQuad(currentTime, start, change, duration);
         scroll(step);
 
-        if (currentTime < duration) {
+        if (Math.round(step) === Math.round(to)) {
+          resolve()
+        } else if (currentTime < duration) {
           requestAnimationFrame(animateScroll);
-        } else if (step >= to) {
-          return resolve();
+        } else {
+          resolve();
         }
       }
 
       animateScroll();
-    })
-  }
-
-  const sleep = (duration) => {
-    return new Promise(resolve => {
-      console.log("SLEEP!");
-      setTimeout(resolve, duration);
     })
   }
 
@@ -100,76 +97,63 @@
     return destinations.map(e => sanitizeUrl(e)).filter(e => e);
   }
 
-  const simulateBrowsing = async (url) => {
-    if (!url) {
-      return chrome.runtime.sendMessage({ type: "exploreQuit" })
+  const navigate = (url) => {
+    window.location.href = url;
+    if (/^#/.test(window.location.href) || !!window.location.hash || window.location.href[window.location.href.length - 1] === "#") {
+      explore();
+    }
+  }
+
+  const simulateBrowsing = async () => {
+    const scrollableHeight = Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight);
+    if (scrollableHeight === window.innerHeight) {
+      await sleep(rand(3) * 1000);
+      return;
     }
 
-    const randomDelay = rand(10) + 1;
-
-    console.log("random delay:", randomDelay);
+    const randomDelay = rand(10);
 
     const scrollDownDelay = rand(randomDelay / 3) + 1;
-    const fakeReadDelay = rand((randomDelay - scrollDownDelay) / 3 * 2) + 1;
-    const scrollUpDelay = rand(randomDelay - scrollDownDelay - fakeReadDelay) + 1;
+    const waitDelay = rand((randomDelay - scrollDownDelay) / 3 * 2) + 1;
+    const scrollUpDelay = rand(randomDelay - scrollDownDelay - waitDelay) + 1;
 
-    const scrollDownAmount = document.body.scrollHeight * (10 + rand(90)) / 100;
-    const distanceFromTop = document.documentElement.scrollTop || document.body.parentNode.scrollTop || document.body.scrollTop;
-    const scrollUpAmount = distanceFromTop - Math.min(Math.max(document.body.scrollHeight * rand(50) / 100, 0), distanceFromTop)
+    const scrollDownAmount = scrollableHeight * (30 + rand(60)) / 100;
+    const scrollUpAmount = scrollDownAmount * rand(80) / 100;
 
-    console.log("scroll down delay:", scrollDownDelay);
-    console.log("fake read delay:", fakeReadDelay);
-    console.log("scroll up delay:", scrollUpDelay);
-    console.log("scroll down amount:", scrollDownAmount);
-    console.log("scroll up amount:", scrollUpAmount);
+    //console.log("Scroll delays:", { randomDelay, waitDelay, scrollDownDelay, scrollUpDelay });
+    //console.log("Scroll px:", { scrollDownAmount, scrollUpAmount });
 
     await smootherScroll(scrollDownAmount, scrollDownDelay * 1000);
 
-    setTimeout(async () => {
-      console.log("AFTER SLEEP!");
+    await sleep(waitDelay * 1000);
 
-      await smootherScroll(scrollUpAmount, scrollUpDelay * 1000);
-
-      chrome.runtime.sendMessage({ type: "getExploringStatus" }, (exploringStatus) => {
-        console.log("exploringStatus:", exploringStatus)
-        if (true) {
-          window.location.href = url;
-        }
-      })
-    }, fakeReadDelay * 1000);
+    await smootherScroll(scrollUpAmount, scrollUpDelay * 1000);
   }
 
-  const explore = () => {
-    const currentPageUrls = collectUrls();
+  const explore = async () => {
+    await simulateBrowsing();
+
+    const discoveredUrls = collectUrls();
     const urlFromCurrentPage = 1 - Math.random() > 0.05;
 
-    let url = null;
+    let nextUrl = null;
     if (urlFromCurrentPage) {
-      const index = rand(currentPageUrls.length);
-      url = currentPageUrls.splice(index, 1);
+      const index = rand(discoveredUrls.length - 1);
+      nextUrl = discoveredUrls.splice(index, 1)[0];
     }
 
-    console.log("currentPageUrls:", currentPageUrls);
-
-    if (currentPageUrls.length > 0) {
-      chrome.runtime.sendMessage({ type: "addDiscoveredUrls", urls: currentPageUrls })
+    if (discoveredUrls.length > 0) {
+      chrome.runtime.sendMessage({ type: "addUrls", discoveredUrls, visitedUrl: nextUrl })
     }
 
-    if (url) {
-      simulateBrowsing(url);
+    if (nextUrl) {
+      navigate(nextUrl);
     } else {
-      chrome.runtime.sendMessage({ type: "getNextUrl" }, (url) => simulateBrowsing(url));
+      chrome.runtime.sendMessage({ type: "getNextUrl" }, (url) => {
+        if (url) {
+          navigate(url);
+        }
+      });
     }
   }
-
-  chrome.runtime.onMessage.addListener((msg, sender, res) => {
-    console.log("msg.exploring:", msg.exploring);
-    if (msg.exploring) {
-      explore();
-    }
-
-    if (chrome.runtime.lastError) {
-      console.log("tabs runtime error:", chrome.runtime.lastError.message);
-    }
-  })
 })();

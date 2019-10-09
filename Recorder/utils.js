@@ -2,7 +2,7 @@ const rand = (max = null) => {
   if (max === null) {
     max = Math.max();
   }
-  return Math.floor(Math.random() * max)
+  return Math.ceil(Math.random() * max)
 }
 
 //magic easing functions http://goo.gl/5HLl8
