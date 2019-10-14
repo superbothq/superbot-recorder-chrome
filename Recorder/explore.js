@@ -21,6 +21,14 @@
     }
   })
 
+  const asyncMessage = (msg) => {
+    return new Promise(resolve => {
+      chrome.runtime.sendMessage(msg, (res) => {
+        resolve(res);
+      })
+    })
+  }
+
   const sanitizeUrl = (url) => {
     if (!url) return null;
 
@@ -120,18 +128,25 @@
     const scrollDownAmount = scrollableHeight * (30 + rand(60)) / 100;
     const scrollUpAmount = scrollDownAmount * rand(80) / 100;
 
-    //console.log("Scroll delays:", { randomDelay, waitDelay, scrollDownDelay, scrollUpDelay });
-    //console.log("Scroll px:", { scrollDownAmount, scrollUpAmount });
+    if (await asyncMessage({ type: "getExploringStatus" })) {
+      await smootherScroll(scrollDownAmount, scrollDownDelay * 1000);
+    }
 
-    await smootherScroll(scrollDownAmount, scrollDownDelay * 1000);
+    if (await asyncMessage({ type: "getExploringStatus" })) {
+      await sleep(waitDelay * 1000)
+    }
 
-    await sleep(waitDelay * 1000);
-
-    await smootherScroll(scrollUpAmount, scrollUpDelay * 1000);
+    if (await asyncMessage({ type: "getExploringStatus" })) {
+      await smootherScroll(scrollUpAmount, scrollUpDelay * 1000);
+    }
   }
 
   const explore = async () => {
     await simulateBrowsing();
+
+    if (!(await asyncMessage({ type: "getExploringStatus" }))) {
+      return;
+    }
 
     const discoveredUrls = collectUrls();
     const urlFromCurrentPage = 1 - Math.random() > 0.05;
