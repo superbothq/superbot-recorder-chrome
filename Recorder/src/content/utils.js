@@ -5,7 +5,6 @@ const rand = (max = null) => {
   return Math.ceil(Math.random() * max)
 }
 
-//magic easing functions http://goo.gl/5HLl8
 const easeInOutQuad = (t, b, c, d) => {
   t /= d / 2;
   if (t < 1) {
