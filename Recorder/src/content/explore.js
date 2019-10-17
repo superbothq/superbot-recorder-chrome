@@ -1,7 +1,3 @@
-window.onfocus = () => {
-  chrome.runtime.sendMessage({ type: "updateContextMenu" });
-}
-
 window.onload = () => {
   chrome.runtime.sendMessage({ type: "getExploringStatus" }, (exploringStatus) => {
     if (exploringStatus) {
@@ -111,64 +107,75 @@ const navigate = (url) => {
   }
 }
 
+
 const clickRandom = () => {
   const elements = Array.from(document.querySelectorAll('*')).filter(e => {
     const clickable = typeof e.click === "function" &&
+      e.nodeName !== "HTML" &&
       e.nodeName !== "BODY" &&
       e.clientWidth > 0 &&
       e.clientHeight > 0;
+
+    if (!clickable) return null;
+
     const coords = e.getBoundingClientRect();
     const inViewport = coords.top >= 0 &&
       coords.left >= 0 &&
       coords.right <= (window.innerWidth || document.documentElement.clientWidth) &&
       coords.bottom <= (window.innerHeight || document.documentElement.clientHeight);
 
-    return clickable && inViewport ? e : null
+    return inViewport ? e : null
   })
 
-  console.log("elements:", elements);
 
   const el = elements[rand(elements.length - 1)];
-  console.log("el:", el);
-  el.click();
-  el.style.backgroundColor = "#ff0000";
+  if (el) {
+    const evnt = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      view: window
+    });
+    el.dispatchEvent(evnt);
+  }
+}
+
+const execCommand = async (command) => {
+  const exploring = await asyncMessage({ type: "getExploringStatus" });
+  if (!exploring) {
+    return;
+  }
+
+  await command();
 }
 
 const simulateBrowsing = async () => {
   const settings = await asyncMessage({ type: "getSettings" });
-  console.log("settings:", settings);
+  //console.log("settings:", settings);
 
   const scrollableHeight = Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight);
-  if (scrollableHeight === window.innerHeight) {
-    await sleep(settings.sleepDelay * 1000);
-    return;
-  }
 
   const scrollDownPx = scrollableHeight * settings.scrollDownAmount / 100;
   const scrollUpPx = scrollableHeight - (scrollableHeight * settings.scrollUpAmount / 100);
 
-  if (await asyncMessage({ type: "getExploringStatus" })) {
-    await smootherScroll(scrollDownPx, settings.scrollDownDelay * 1000);
+  if (scrollableHeight !== window.innerHeight) {
+    await execCommand(() => smootherScroll(scrollDownPx, settings.scrollDownDelay * 1000))
   }
 
-  if (await asyncMessage({ type: "getExploringStatus" })) {
-    await sleep(settings.sleepDelay * 1000)
-  }
+  await execCommand(() => sleep(settings.sleepDelay * 1000))
 
   if (settings.clicksEnabled) {
-    clickRandom();
-    //await sleep(9999999999);
+    await execCommand(clickRandom);
   }
 
-  if (await asyncMessage({ type: "getExploringStatus" })) {
-    await smootherScroll(scrollUpPx, settings.scrollUpDelay * 1000);
+  if (scrollableHeight !== window.innerHeight) {
+    await execCommand(() => smootherScroll(scrollUpPx, settings.scrollUpDelay * 1000));
   }
 }
 
 const explore = async () => {
   await simulateBrowsing();
 
-  if (!(await asyncMessage({ type: "getExploringStatus" }))) {
+  if (await asyncMessage({ type: "getExploringStatus" }) === false) {
     return;
   }
 

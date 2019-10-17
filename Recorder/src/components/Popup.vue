@@ -77,10 +77,14 @@ export default {
   },
   created() {
     this.getSettings().then(settings => {
-        Object.keys(settings).forEach(key => {
-          this[key] = settings[key];
-        })
+      Object.keys(settings).forEach(key => {
+        this[key] = settings[key];
       })
+    })
+
+    chrome.runtime.sendMessage({ type: "getExploringStatus" }, status => {
+      this.exploring = status;
+    })
   },
   methods: {
     toggle() {
@@ -123,7 +127,7 @@ export default {
     },
     toggleExplore(){
       this.exploring = !this.exploring;
-      //send message to background page
+      chrome.runtime.sendMessage({ type: "toggleExplore" });
     }
   }
 }
@@ -164,5 +168,6 @@ export default {
   }
   .toggle-explore > p{
     margin-top: 17px;
+    user-select: none;
   }
 </style>

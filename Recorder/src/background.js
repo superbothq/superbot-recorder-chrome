@@ -14,22 +14,24 @@ const rand = (max) => {
   return Math.floor(Math.random() * max)
 }
 
-const updateContextMenu = (currentStatus) => {
-  const updated = {
-    title: currentStatus ? "Stop exploring" : "Start exploring"
-  }
-
-  chrome.contextMenus.update("explore", updated);
+const getActiveTab = () => {
+  return new Promise((resolve, reject) => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]) {
+        resolve(tabs[0]);
+      } else {
+        reject(null)
+      }
+    });
+  })
 }
 
-chrome.contextMenus.create({
-  id: "explore",
-  title: "Start exploring",
-  contexts: ["browser_action"]
-});
-
 const getTab = (tabId) => {
-  return new Promise(resolve => {
+  return new Promise(async (resolve) => {
+    if (!tabId) {
+      const activeTab = await getActiveTab();
+      tabId = activeTab.id;
+    }
     chrome.storage.local.get("cache", (data) => {
       const id = `tab-${tabId}`;
       if (!data.cache[id]) {
@@ -39,6 +41,7 @@ const getTab = (tabId) => {
         data.cache[id].visitedUrls = [];
       }
 
+      data.cache[id].id = tabId;
       resolve(data.cache[id]);
     })
   })
@@ -68,12 +71,9 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
     return;
   }
 
-  getTab(sender.tab.id).then((tab) => {
-    switch (req.type) {
-      case "updateContextMenu": {
-        updateContextMenu(tab.exploringStatus);
-      } break;
 
+  getTab(sender.tab && sender.tab.id ? sender.tab.id : null).then(tab => {
+    switch (req.type) {
       case "getExploringStatus": {
         sendResponse(tab.exploringStatus);
       } break;
@@ -89,7 +89,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
           tab.visitedUrls = [...new Set([...tab.visitedUrls, req.visitedUrl])];
         }
 
-        updateTab(sender.tab.id, tab);
+        updateTab(tab.id, tab);
       } break;
 
       case "getNextUrl": {
@@ -105,7 +105,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
         const index = rand(tab.discoveredUrls.length - 1);
         const url = tab.discoveredUrls.splice(index, 1);
         tab.visitedUrls = [...new Set([...tab.visitedUrls, url])];
-        updateTab(sender.tab.id, tab);
+        updateTab(tab.id, tab);
         sendResponse(url);
       } break;
 
@@ -115,29 +115,22 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
         })
       } break;
 
+      case "toggleExplore": {
+        tab.exploringStatus = !tab.exploringStatus;
+        updateTab(tab.id, tab);
+        chrome.tabs.sendMessage(tab.id, { exploring: tab.exploringStatus });
+        if (tab.exploringStatus === false) {
+          deleteTab(tab.id);
+        }
+      } break;
+
       default: break;
     }
-
-    if (chrome.runtime.lastError) {
-      console.error("Background runtime error:", chrome.runtime.lastError.message);
-    }
   })
+
+  if (chrome.runtime.lastError) {
+    console.error("Background runtime error:", chrome.runtime.lastError.message);
+  }
 
   return true;
 });
-
-
-chrome.contextMenus.onClicked.addListener((info, currentTab) => {
-  if (info.menuItemId !== "explore")
-    return;
-
-  getTab(currentTab.id).then((tab) => {
-    tab.exploringStatus = !tab.exploringStatus;
-    updateTab(currentTab.id, tab);
-    updateContextMenu(tab.exploringStatus);
-    chrome.tabs.sendMessage(currentTab.id, { exploring: tab.exploringStatus });
-    if (tab.exploringStatus === false) {
-      deleteTab(currentTab.id);
-    }
-  })
-})
