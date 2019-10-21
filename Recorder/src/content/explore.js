@@ -1,6 +1,6 @@
 window.onload = () => {
-  chrome.runtime.sendMessage({ type: "getExploringStatus" }, (exploringStatus) => {
-    if (exploringStatus) {
+  chrome.runtime.sendMessage({ type: "getExploringStatus" }, (res) => {
+    if (res.status) {
       explore();
     }
   })
@@ -107,41 +107,9 @@ const navigate = (url) => {
   }
 }
 
-
-const clickRandom = () => {
-  const elements = Array.from(document.querySelectorAll('*')).filter(e => {
-    const clickable = typeof e.click === "function" &&
-      e.nodeName !== "HTML" &&
-      e.nodeName !== "BODY" &&
-      e.clientWidth > 0 &&
-      e.clientHeight > 0;
-
-    if (!clickable) return null;
-
-    const coords = e.getBoundingClientRect();
-    const inViewport = coords.top >= 0 &&
-      coords.left >= 0 &&
-      coords.right <= (window.innerWidth || document.documentElement.clientWidth) &&
-      coords.bottom <= (window.innerHeight || document.documentElement.clientHeight);
-
-    return inViewport ? e : null
-  })
-
-
-  const el = elements[rand(elements.length - 1)];
-  if (el) {
-    const evnt = new MouseEvent('click', {
-      bubbles: true,
-      cancelable: true,
-      view: window
-    });
-    el.dispatchEvent(evnt);
-  }
-}
-
 const execCommand = async (command) => {
   const exploring = await asyncMessage({ type: "getExploringStatus" });
-  if (!exploring) {
+  if (!exploring.status) {
     return;
   }
 
@@ -150,7 +118,7 @@ const execCommand = async (command) => {
 
 const simulateBrowsing = async () => {
   const settings = await asyncMessage({ type: "getSettings" });
-  //console.log("settings:", settings);
+  console.log("settings:", settings);
 
   const scrollableHeight = Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight);
 
@@ -161,11 +129,13 @@ const simulateBrowsing = async () => {
     await execCommand(() => smootherScroll(scrollDownPx, settings.scrollDownDelay * 1000))
   }
 
-  await execCommand(() => sleep(settings.sleepDelay * 1000))
+  //await execCommand(() => sleep(settings.sleepDelay * 1000))
 
   if (settings.clicksEnabled) {
-    await execCommand(clickRandom);
+    await execCommand(() => chrome.runtime.sendMessage({ type: "clickRandom" }));
   }
+
+  await execCommand(() => sleep(settings.sleepDelay * 1000))
 
   if (scrollableHeight !== window.innerHeight) {
     await execCommand(() => smootherScroll(scrollUpPx, settings.scrollUpDelay * 1000));
@@ -175,7 +145,7 @@ const simulateBrowsing = async () => {
 const explore = async () => {
   await simulateBrowsing();
 
-  if (await asyncMessage({ type: "getExploringStatus" }) === false) {
+  if (await asyncMessage({ type: "getExploringStatus" }).status === false) {
     return;
   }
 

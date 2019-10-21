@@ -3,9 +3,28 @@ chrome.runtime.onInstalled.addListener(() => {
     if (!data.cache) {
       data.cache = {};
     }
+
+    if (!data.cache.settings) {
+      data.cache.settings = {};
+      data.cache.settings.clicksEnabled = false;
+      data.cache.settings.scrollDownDelay = 2;
+      data.cache.settings.scrollDownAmount = 75;
+      data.cache.settings.scrollUpDelay = 1;
+      data.cache.settings.scrollUpAmount = 25;
+      data.cache.settings.clicksEnabled = 1;
+    }
+
     chrome.storage.local.set(data);
   })
 });
+
+const asyncSendCommand = (target, cmd, param) => {
+  return new Promise(resolve => {
+    chrome.debugger.sendCommand(target, cmd, param, res => {
+      resolve(res);
+    })
+  })
+}
 
 const rand = (max) => {
   if (!max) {
@@ -62,6 +81,33 @@ const deleteTab = (id) => {
   });
 }
 
+const attachDebugger = (id) => {
+  chrome.debugger.getTargets(targets => {
+
+    const newTarget = targets.filter(t => t.tabId === id)[0];
+    if (!newTarget) {
+      return console.error("Error: debug target not found!");
+    }
+
+
+    const debugTarget = {
+      targetId: newTarget.id
+    }
+
+    const debuggerAttach = setInterval(() => {
+      chrome.debugger.attach(debugTarget, '1.3', () => {
+        if (chrome.runtime.lastError && !chrome.runtime.lastError.message.includes("Another debugger is already attached")) {
+          return console.error("Error attaching debugger:", chrome.runtime.lastError);
+        }
+
+        clearInterval(debuggerAttach);
+      })
+    })
+
+    this.debugTarget = debugTarget;
+  })
+}
+
 chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
   if (req.time) {
     chrome.browserAction.setBadgeText({
@@ -75,7 +121,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
   getTab(sender.tab && sender.tab.id ? sender.tab.id : null).then(tab => {
     switch (req.type) {
       case "getExploringStatus": {
-        sendResponse(tab.exploringStatus);
+        sendResponse({ status: tab.exploringStatus, id: tab.id });
       } break;
 
       case "addUrls": {
@@ -121,8 +167,67 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
         chrome.tabs.sendMessage(tab.id, { exploring: tab.exploringStatus });
         if (tab.exploringStatus === false) {
           deleteTab(tab.id);
+        } else {
+          attachDebugger(tab.id);
         }
       } break;
+
+      case "clickRandom": {
+        (async () => {
+          const array = await asyncSendCommand(this.debugTarget, "Runtime.evaluate", {
+            expression: "Array.from(document.querySelectorAll('*'))"
+          })
+
+          const arrayProperties = await asyncSendCommand(this.debugTarget, "Runtime.getProperties", {
+            objectId: array.result.objectId
+          });
+          console.log("elements:", arrayProperties.result)
+
+          const windowHeight = await asyncSendCommand(this.debugTarget, "Runtime.evaluate", {
+            expression: "(window.innerHeight || document.documentElement.clientHeight)"
+          });
+
+          const scrollHeight = await asyncSendCommand(this.debugTarget, "Runtime.evaluate", {
+            expression: "scrollY"
+          });
+
+          const indices = await Promise.all(arrayProperties.result.map(async (e, index) => {
+            if (e.value && e.value.objectId && e.value.className.includes("HTML")) {
+              const result = await asyncSendCommand(this.debugTarget, "DOM.getContentQuads", {
+                objectId: e.value.objectId
+              });
+              if (!result) return null;
+
+
+              const elTop = result.quads[0][1];
+              const elBot = result.quads[0][5];
+              const vpTop = scrollHeight.result.value;
+              const vpBot = scrollHeight.result.value + windowHeight.result.value;
+
+              if (vpTop > elBot || vpBot < elTop) {
+                return null;
+              }
+
+
+              const { listeners } = await asyncSendCommand(this.debugTarget, "DOMDebugger.getEventListeners", {
+                objectId: e.value.objectId
+              });
+              if (listeners) {
+                for (let i = 0; i < listeners.length; i++) {
+                  if (listeners[i].type === "click") {
+                    return index;
+                  }
+                }
+              }
+            }
+            return null;
+          }));
+
+          const indicesFiltered = indices.filter(e => e);
+          console.log("indices filtered:", indicesFiltered);
+
+        })();
+      }
 
       default: break;
     }

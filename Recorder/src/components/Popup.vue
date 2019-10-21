@@ -82,8 +82,8 @@ export default {
       })
     })
 
-    chrome.runtime.sendMessage({ type: "getExploringStatus" }, status => {
-      this.exploring = status;
+    chrome.runtime.sendMessage({ type: "getExploringStatus" }, res => {
+      this.exploring = res.status;
     })
   },
   methods: {
@@ -98,19 +98,7 @@ export default {
     getSettings() {
       return new Promise(resolve => {
         chrome.storage.local.get("cache", data => {
-          if(!data.cache || !data.cache.settings){
-            if(!data.cache){
-              data.cache = {};
-            }
-            data.cache.settings = {};
-            data.cache.settings.clicksEnabled = false;
-            data.cache.settings.scrollDownDelay = 2;
-            data.cache.settings.scrollDownAmount = 75;
-            data.cache.settings.scrollUpDelay = 1;
-            data.cache.settings.scrollUpAmount = 25;
-            data.cache.settings.clicksEnabled = 1;
-            chrome.storage.local.set("cache", data);
-          }
+          console.log("data.cache.settings:", data.cache.settings)
 
           resolve(data.cache.settings);
         })
