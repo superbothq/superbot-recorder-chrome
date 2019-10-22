@@ -19,8 +19,12 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 const asyncSendCommand = (target, cmd, param) => {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     chrome.debugger.sendCommand(target, cmd, param, res => {
+      if (chrome.runtime.lastError) {
+        console.log("Async send command:", chrome.runtime.lastError.message)
+        reject(chrome.runtime.lastError.message)
+      }
       resolve(res);
     })
   })
@@ -58,6 +62,7 @@ const getTab = (tabId) => {
         data.cache[id].exploringStatus = false;
         data.cache[id].discoveredUrls = [];
         data.cache[id].visitedUrls = [];
+        data.cache[id].debugTarget = {};
       }
 
       data.cache[id].id = tabId;
@@ -81,30 +86,28 @@ const deleteTab = (id) => {
   });
 }
 
-const attachDebugger = (id) => {
+const attachDebugger = (tab) => {
   chrome.debugger.getTargets(targets => {
-
-    const newTarget = targets.filter(t => t.tabId === id)[0];
+    const newTarget = targets.filter(t => t.tabId === tab.id)[0];
     if (!newTarget) {
       return console.error("Error: debug target not found!");
     }
-
 
     const debugTarget = {
       targetId: newTarget.id
     }
 
-    const debuggerAttach = setInterval(() => {
-      chrome.debugger.attach(debugTarget, '1.3', () => {
-        if (chrome.runtime.lastError && !chrome.runtime.lastError.message.includes("Another debugger is already attached")) {
-          return console.error("Error attaching debugger:", chrome.runtime.lastError);
-        }
+    chrome.debugger.attach(debugTarget, '1.3', () => {
+      if (chrome.runtime.lastError && !chrome.runtime.lastError.message.includes("Another debugger is already attached")) {
+        return console.error("Error attaching debugger:", chrome.runtime.lastError);
+      }
 
-        clearInterval(debuggerAttach);
-      })
+      const id = tab.id;
+      delete tab.id;
+      tab.debugTarget = debugTarget;
+
+      updateTab(id, tab);
     })
-
-    this.debugTarget = debugTarget;
   })
 }
 
@@ -118,7 +121,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
   }
 
 
-  getTab(sender.tab && sender.tab.id ? sender.tab.id : null).then(tab => {
+  getTab(sender.tab && sender.tab.id ? sender.tab.id : null).then(async (tab) => {
     switch (req.type) {
       case "getExploringStatus": {
         sendResponse({ status: tab.exploringStatus, id: tab.id });
@@ -165,77 +168,75 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
         tab.exploringStatus = !tab.exploringStatus;
         updateTab(tab.id, tab);
         chrome.tabs.sendMessage(tab.id, { exploring: tab.exploringStatus });
-        if (tab.exploringStatus === false) {
-          deleteTab(tab.id);
+        if (tab.exploringStatus) {
+          attachDebugger(tab);
         } else {
-          attachDebugger(tab.id);
+          chrome.debugger.detach(tab.debugTarget);
+          deleteTab(tab.id);
         }
       } break;
 
       case "clickRandom": {
-        (async () => {
-          const array = await asyncSendCommand(this.debugTarget, "Runtime.evaluate", {
-            expression: "Array.from(document.querySelectorAll('*'))"
-          })
+        const array = await asyncSendCommand(tab.debugTarget, "Runtime.evaluate", {
+          expression: `
+            Array.from(document.body.querySelectorAll('*')).filter(e => {
+              if(e.nodeName === "BODY" || e.nodeName === "SCRIPT" || e.nodeName === "NOSCRIPT" || e.nodeName === "svg" || e.nodeName === "path")
+                return false;
 
-          const arrayProperties = await asyncSendCommand(this.debugTarget, "Runtime.getProperties", {
-            objectId: array.result.objectId
-          });
-          console.log("elements:", arrayProperties.result)
+              const rect = e.getBoundingClientRect();
+              const windowHeight = (window.innerHeight || document.documentElement.clientHeight);
+              const windowWidth = (window.innerWidth || document.documentElement.clientWidth);
 
-          const windowHeight = await asyncSendCommand(this.debugTarget, "Runtime.evaluate", {
-            expression: "(window.innerHeight || document.documentElement.clientHeight)"
-          });
+              const vertInView = (rect.top <= windowHeight) && ((rect.top + rect.height) >= 0);
+              const horInView = (rect.left <= windowWidth) && ((rect.left + rect.width) >= 0);
 
-          const scrollHeight = await asyncSendCommand(this.debugTarget, "Runtime.evaluate", {
-            expression: "scrollY"
-          });
+              return (vertInView && horInView);
+            });
+          `
+        })
 
-          const indices = await Promise.all(arrayProperties.result.map(async (e, index) => {
-            if (e.value && e.value.objectId && e.value.className.includes("HTML")) {
-              const result = await asyncSendCommand(this.debugTarget, "DOM.getContentQuads", {
-                objectId: e.value.objectId
-              });
-              if (!result) return null;
+        const arrayProperties = await asyncSendCommand(tab.debugTarget, "Runtime.getProperties", {
+          objectId: array.result.objectId
+        });
+        //console.log("elements:", arrayProperties.result)
 
-
-              const elTop = result.quads[0][1];
-              const elBot = result.quads[0][5];
-              const vpTop = scrollHeight.result.value;
-              const vpBot = scrollHeight.result.value + windowHeight.result.value;
-
-              if (vpTop > elBot || vpBot < elTop) {
-                return null;
-              }
-
-
-              const { listeners } = await asyncSendCommand(this.debugTarget, "DOMDebugger.getEventListeners", {
-                objectId: e.value.objectId
-              });
-              if (listeners) {
-                for (let i = 0; i < listeners.length; i++) {
-                  if (listeners[i].type === "click") {
-                    return index;
-                  }
+        const indices = (await Promise.all(arrayProperties.result.map(async (e, index) => {
+          if (e.value && e.value.objectId && e.value.className.includes("HTML")) {
+            const { listeners } = await asyncSendCommand(tab.debugTarget, "DOMDebugger.getEventListeners", {
+              objectId: e.value.objectId
+            });
+            if (listeners && listeners.length > 0) {
+              for (let i = 0; i < listeners.length; i++) {
+                if (listeners[i].type === "click") {
+                  return index;
                 }
               }
             }
-            return null;
-          }));
+          }
+          return null;
+        }))).filter(e => e);
+        //console.log("indices:", indices);
 
-          const indicesFiltered = indices.filter(e => e);
-          console.log("indices filtered:", indicesFiltered);
+        const targetElem = arrayProperties.result[rand(indices.length - 1)];
 
-        })();
+        if (targetElem) {
+          await asyncSendCommand(tab.debugTarget, "Runtime.callFunctionOn", {
+            functionDeclaration: `
+                function(){
+                  //console.log(this);
+                  this.click();
+                }`,
+            objectId: targetElem.value.objectId,
+            parameters: [{
+              objectId: targetElem.value.objectId
+            }]
+          })
+        }
       }
 
       default: break;
     }
   })
-
-  if (chrome.runtime.lastError) {
-    console.error("Background runtime error:", chrome.runtime.lastError.message);
-  }
 
   return true;
 });

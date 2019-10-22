@@ -118,26 +118,29 @@ const execCommand = async (command) => {
 
 const simulateBrowsing = async () => {
   const settings = await asyncMessage({ type: "getSettings" });
-  console.log("settings:", settings);
+  //console.log("settings:", settings);
 
-  const scrollableHeight = Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight);
+  const isScrollable = document.body.scrollHeight !== window.innerHeight;
+  //console.log("IS SCROLLABLE:", isScrollable);
 
-  const scrollDownPx = scrollableHeight * settings.scrollDownAmount / 100;
-  const scrollUpPx = scrollableHeight - (scrollableHeight * settings.scrollUpAmount / 100);
+  const scrollDownPx = document.body.scrollHeight * settings.scrollDownAmount / 100;
+  const scrollUpPx = scrollDownPx - (document.body.scrollHeight * settings.scrollUpAmount / 100);
 
-  if (scrollableHeight !== window.innerHeight) {
+  if (isScrollable) {
+    //console.log("SCROLL DOWN!");
     await execCommand(() => smootherScroll(scrollDownPx, settings.scrollDownDelay * 1000))
   }
 
-  //await execCommand(() => sleep(settings.sleepDelay * 1000))
-
   if (settings.clicksEnabled) {
+    //console.log("CLICK!");
     await execCommand(() => chrome.runtime.sendMessage({ type: "clickRandom" }));
   }
 
+  //console.log("SLEEP!");
   await execCommand(() => sleep(settings.sleepDelay * 1000))
 
-  if (scrollableHeight !== window.innerHeight) {
+  if (isScrollable) {
+    //console.log("SCROLL UP!");
     await execCommand(() => smootherScroll(scrollUpPx, settings.scrollUpDelay * 1000));
   }
 }
@@ -145,7 +148,8 @@ const simulateBrowsing = async () => {
 const explore = async () => {
   await simulateBrowsing();
 
-  if (await asyncMessage({ type: "getExploringStatus" }).status === false) {
+  const exploring = await asyncMessage({ type: "getExploringStatus" });
+  if (!exploring.status) {
     return;
   }
 
