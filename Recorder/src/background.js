@@ -22,7 +22,6 @@ const asyncSendCommand = (target, cmd, param) => {
   return new Promise((resolve, reject) => {
     chrome.debugger.sendCommand(target, cmd, param, res => {
       if (chrome.runtime.lastError) {
-        console.log("Async send command:", chrome.runtime.lastError.message)
         reject(chrome.runtime.lastError.message)
       }
       resolve(res);
@@ -177,10 +176,28 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
       } break;
 
       case "clickRandom": {
-        const array = await asyncSendCommand(tab.debugTarget, "Runtime.evaluate", {
-          expression: `
+        try {
+          const array = await asyncSendCommand(tab.debugTarget, "Runtime.evaluate", {
+            expression: `
             Array.from(document.body.querySelectorAll('*')).filter(e => {
-              if(e.nodeName === "BODY" || e.nodeName === "SCRIPT" || e.nodeName === "NOSCRIPT" || e.nodeName === "svg" || e.nodeName === "path")
+              const nonClickable = [
+                "BODY",
+                "SCRIPT",
+                "NOSCRIPT",
+                "META",
+                "STYLE",
+                "SOURCE",
+                "OPTION",
+                "svg",
+                "g",
+                "polygon",
+                "path",
+                "rect",
+                "title",
+                "circle"
+              ];
+
+              if(nonClickable.indexOf(e.nodeName) !== -1)
                 return false;
 
               const rect = e.getBoundingClientRect();
@@ -193,44 +210,50 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
               return (vertInView && horInView);
             });
           `
-        })
+          })
 
-        const arrayProperties = await asyncSendCommand(tab.debugTarget, "Runtime.getProperties", {
-          objectId: array.result.objectId
-        });
-        //console.log("elements:", arrayProperties.result)
+          const arrayProperties = await asyncSendCommand(tab.debugTarget, "Runtime.getProperties", {
+            objectId: array.result.objectId
+          });
+          //console.log("elements:", arrayProperties.result)
 
-        const indices = (await Promise.all(arrayProperties.result.map(async (e, index) => {
-          if (e.value && e.value.objectId && e.value.className.includes("HTML")) {
-            const { listeners } = await asyncSendCommand(tab.debugTarget, "DOMDebugger.getEventListeners", {
-              objectId: e.value.objectId
-            });
-            if (listeners && listeners.length > 0) {
-              for (let i = 0; i < listeners.length; i++) {
-                if (listeners[i].type === "click") {
-                  return index;
+          const indices = (await Promise.all(arrayProperties.result.map(async (e, index) => {
+            if (e.value && e.value.objectId && e.value.className.includes("HTML")) {
+              const { listeners } = await asyncSendCommand(tab.debugTarget, "DOMDebugger.getEventListeners", {
+                objectId: e.value.objectId
+              });
+              if (listeners && listeners.length > 0) {
+                for (let i = 0; i < listeners.length; i++) {
+                  if (listeners[i].type === "click") {
+                    return index;
+                  }
                 }
               }
             }
-          }
-          return null;
-        }))).filter(e => e);
-        //console.log("indices:", indices);
+            return null;
+          }))).filter(e => e);
+          //console.log("indices:", indices);
 
-        const targetElem = arrayProperties.result[rand(indices.length - 1)];
+          const targetElem = arrayProperties.result[rand(indices.length - 1)];
 
-        if (targetElem) {
-          await asyncSendCommand(tab.debugTarget, "Runtime.callFunctionOn", {
-            functionDeclaration: `
+          if (targetElem) {
+            await asyncSendCommand(tab.debugTarget, "Runtime.callFunctionOn", {
+              functionDeclaration: `
                 function(){
-                  //console.log(this);
+                  console.log(this);
                   this.click();
                 }`,
-            objectId: targetElem.value.objectId,
-            parameters: [{
-              objectId: targetElem.value.objectId
-            }]
-          })
+              objectId: targetElem.value.objectId,
+              parameters: [{
+                objectId: targetElem.value.objectId
+              }]
+            })
+          }
+        } catch (e) {
+          if (e.includes("Debugger is not attached to the target")) {
+            attachDebugger(tab);
+            return;
+          }
         }
       }
 
